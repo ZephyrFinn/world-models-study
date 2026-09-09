@@ -26,7 +26,8 @@ it directly rather than inferring it from the loss curve.
 | [`01_dreamer_from_scratch/`](01_dreamer_from_scratch) | DreamerV2 written from scratch, single file. RSSM, reward head, actor-critic, imagination rollout. vs. Double-DQN on CartPole, 3 seeds. |
 | [`02_lewm_reproduction/`](02_lewm_reproduction) | Getting [LeWorldModel](https://github.com/lucas-maes/le-wm) running and reproducing its released checkpoint. Most of the notes here are about the install, which is where the time actually went. |
 | [`03_experiments/`](03_experiments) | The part I care about. Three controlled experiments on LeWorldModel. |
-| [`04_analysis/`](04_analysis) | `summary.csv` — every checkpoint, every metric, one table — and the script that draws the figures. |
+| [`04_analysis/`](04_analysis) | `summary.csv` — every checkpoint, every metric, one table — and the scripts that draw the figures. |
+| [`05_dreamerv3_scale/`](05_dreamerv3_scale) | The official DreamerV3 on DMC walker-walk, run overnight to the task ceiling. |
 | [`notes/engineering_log.md`](notes/engineering_log.md) | What broke, and how long each thing cost. |
 
 ## Part 1 — Dreamer, written out by hand
@@ -53,6 +54,19 @@ that the imagined rollouts are tracking something real rather than drifting off
 into a comfortable hallucination.
 
 ![](01_dreamer_from_scratch/results/diagnostics.png)
+
+### At benchmark scale
+
+CartPole proves the components work; it does not produce a curve anyone wants
+to look at. So the official
+[dreamerv3-torch](https://github.com/NM512/dreamerv3-torch) also ran overnight
+on DMC walker-walk:
+
+![](04_analysis/figures/dreamerv3_walker.png)
+
+31 return at 5k steps, 568 at 45k, 951 at 195k, then flat in the 930–955 band
+against a ceiling near 1000. Details and the one patch it needed in
+[`05_dreamerv3_scale/`](05_dreamerv3_scale).
 
 ## Part 2 — LeWorldModel, reproduced
 
@@ -151,8 +165,8 @@ claim by measuring the mechanism rather than the metric.
 It isn't publication-grade. Every LeWorldModel arm is a single seed at 900
 gradient steps with a 50-episode eval, against a released checkpoint that
 reaches 86% on the same protocol — so all of these models are undertrained, and
-differences under ~10pp are noise. The Dreamer half is better behaved (3 seeds)
-but CartPole-scale. Nothing here compares Dreamer against LeWorldModel
+differences under ~10pp are noise. The Dreamer half is better behaved — 3 seeds on CartPole, plus a full-scale
+walker-walk run that reaches the task ceiling. Nothing here compares Dreamer against LeWorldModel
 head-to-head, because they optimize different objectives (reward vs.
 distance-to-goal-embedding) and evaluate on different metrics (return vs.
 success rate); forcing them onto one axis would need a shared task definition I
@@ -173,6 +187,9 @@ cd 03_experiments/exp2_pldm   && ./run.sh              # ~5 min
 cd 03_experiments/exp3_sigreg && ./run.sh              # ~10 min
 cd 04_analysis && python make_figures.py
 ```
+
+The DreamerV3 run is a separate overnight job — see
+[`05_dreamerv3_scale/`](05_dreamerv3_scale).
 
 Hardware: one RTX 5880 Ada. Peak ~13 GB for a LeWorldModel arm at batch 128,
 224px; the Dreamer half fits in under 2 GB.
