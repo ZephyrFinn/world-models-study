@@ -1,0 +1,20 @@
+{
+  "env": "CartPole-v1",
+  "logdir": "runs/dqn_cartpole_s1",
+  "tag": "dqn_s1",
+  "seed": 1,
+  "device": "cpu",
+  "lr": 0.001,
+  "discount": 0.99,
+  "batch_size": 64,
+  "capacity": 100000,
+  "prefill": 1000,
+  "train_every": 1,
+  "target_every": 500,
+  "eps_start": 1.0,
+  "eps_end": 0.05,
+  "eps_decay": 10000,
+  "total_steps": 20000,
+  "eval_every": 1000,
+  "eval_episodes": 5
+}

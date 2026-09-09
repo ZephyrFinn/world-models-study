@@ -1,0 +1,23 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# trained weights - regenerate with the run scripts
+*.pt
+*.ckpt
+agent.pt
+
+# hydra / lightning scratch
+outputs/
+lightning_logs/
+wandb/
+
+# generated
+slides/slides.html
+
+# local working notes
+interview_prep/
+notes/PROGRESS.md
+
+.DS_Store
