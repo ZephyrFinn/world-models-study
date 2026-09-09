@@ -1,0 +1,8 @@
+checkpoint,experiment,arch,history_size,sigreg_weight,train_steps,val_loss,pred_loss,sigreg_loss,cem_success_pct,emb_mean_std,emb_min_std,dead_dims,dead_frac
+lewm_hist1,exp1_horizon,LeWM,1,0.09,900,0.8272,0.3454,5.3516,54.0,0.3472,0.1131,0,0.000
+lewm_hist3,exp1_horizon,LeWM,3,0.09,900,0.7300,0.2656,5.1578,52.0,0.3251,0.1129,0,0.000
+lewm_hist5,exp1_horizon,LeWM,5,0.09,900,0.6886,0.2541,4.8297,64.0,0.3893,0.1624,0,0.000
+pldm_baseline,exp2_pldm,PLDM,3,0.09,900,0.7347,0.2983,4.8516,66.0,0.3804,0.1264,0,0.000
+lewm_sigreg_low,exp3_sigreg,LeWM,3,0.001,900,0.0548,0.0040,50.7500,34.0,0.0012,0.0005,69,0.359
+lewm_sigreg_high,exp3_sigreg,LeWM,3,1.0,900,12.8394,1.0738,11.7656,38.0,0.1145,0.0504,0,0.000
+released_tworoom,02_reproduction,LeWM,3,0.09,,,,,86.0,,,,
