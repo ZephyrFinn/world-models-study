@@ -44,10 +44,13 @@ STEP, RET = dreamerv3_status()
 v3_headline = f"{RET:.0f}" if RET else "--"
 v3_sub = (f"eval return at {STEP/1000:.0f}k / 1M env steps"
           if STEP else "run not found")
-v3_note = ("Run was still climbing when this deck was built. "
-           "Rebuild the deck to refresh."
-           if STEP and STEP < 1_000_000 else
-           "Full 1M-step run complete.")
+if STEP and STEP >= 1_000_000:
+    v3_note = "Full 1M-step run complete."
+elif RET and RET > 900:
+    v3_note = ("Plateaued near the task ceiling (~1000) from roughly 300k steps on. "
+               "Run continues to 1M.")
+else:
+    v3_note = "Run still climbing when this deck was built. Rebuild to refresh."
 
 SLIDES = [
     # ---------------------------------------------------------------- 1

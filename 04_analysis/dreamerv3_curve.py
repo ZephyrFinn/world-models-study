@@ -49,13 +49,17 @@ def main(path):
     ax.set_ylim(0, max(1080, max(returns) * 1.2))
 
     ax.axhline(1000, color=GREY, ls=":", lw=1)
-    ax.annotate("task ceiling ~1000", (steps[-1], 1000), fontsize=8,
-                color=GREY, va="top", ha="right",
-                textcoords="offset points", xytext=(0, -4))
+    ax.annotate("task ceiling ~1000", (steps[0], 1000), fontsize=8,
+                color=GREY, va="bottom", ha="left",
+                textcoords="offset points", xytext=(2, 3))
 
     last = returns[-1]
-    ax.annotate(f"{last:.0f} @ {steps[-1]/1000:.0f}k steps\n(run targets 1M, still climbing)",
-                (steps[-1], last), textcoords="offset points", xytext=(-8, -34),
+    # describe the tail honestly: still rising, or flat near the ceiling?
+    tail = returns[-8:]
+    plateaued = len(tail) >= 8 and (max(tail) - min(tail)) < 0.08 * max(tail)
+    shape = ("plateaued near ceiling" if plateaued else "still climbing")
+    ax.annotate(f"{last:.0f} @ {steps[-1]/1000:.0f}k steps\n({shape}, run targets 1M)",
+                (steps[-1], last), textcoords="offset points", xytext=(-10, -40),
                 ha="right", fontsize=8, color=BLUE)
 
     fig.tight_layout()
