@@ -1,0 +1,110 @@
+[
+ {
+  "checkpoint": "lewm_sigreg_low/weights_epoch_3.pt",
+  "emb_mean_std": 0.001208051573485136,
+  "dead_dims": 49,
+  "eff_rank": 7.4,
+  "gauss_stat": 1206.14,
+  "probe_r2": 0.4674,
+  "ridge_alpha": 0.1
+ },
+ {
+  "checkpoint": "lewm_dim192/weights_epoch_3.pt",
+  "emb_mean_std": 0.31907832622528076,
+  "dead_dims": 0,
+  "eff_rank": 4.14,
+  "gauss_stat": 1205.57,
+  "probe_r2": 0.4968,
+  "ridge_alpha": 0.01
+ },
+ {
+  "checkpoint": "lewm_sigreg_high/weights_epoch_3.pt",
+  "emb_mean_std": 0.1160036101937294,
+  "dead_dims": 0,
+  "eff_rank": 5.71,
+  "gauss_stat": 1206.06,
+  "probe_r2": 0.5155,
+  "ridge_alpha": 0.001
+ },
+ {
+  "checkpoint": "lewm_hist1/weights_epoch_3.pt",
+  "emb_mean_std": 0.3482486307621002,
+  "dead_dims": 0,
+  "eff_rank": 3.81,
+  "gauss_stat": 1205.52,
+  "probe_r2": 0.5253,
+  "ridge_alpha": 0.01
+ },
+ {
+  "checkpoint": "lewm_hist5/weights_epoch_3.pt",
+  "emb_mean_std": 0.388614684343338,
+  "dead_dims": 0,
+  "eff_rank": 3.98,
+  "gauss_stat": 1204.38,
+  "probe_r2": 0.5063,
+  "ridge_alpha": 0.01
+ },
+ {
+  "checkpoint": "exp2_lewm_s0/weights_epoch_3.pt",
+  "emb_mean_std": 0.2589558959007263,
+  "dead_dims": 0,
+  "eff_rank": 5.12,
+  "gauss_stat": 1205.64,
+  "probe_r2": 0.584,
+  "ridge_alpha": 0.001
+ },
+ {
+  "checkpoint": "exp2_lewm_s1/weights_epoch_3.pt",
+  "emb_mean_std": 0.32396936416625977,
+  "dead_dims": 0,
+  "eff_rank": 3.54,
+  "gauss_stat": 1204.71,
+  "probe_r2": 0.5232,
+  "ridge_alpha": 0.01
+ },
+ {
+  "checkpoint": "exp2_lewm_s2/weights_epoch_3.pt",
+  "emb_mean_std": 0.40126052498817444,
+  "dead_dims": 0,
+  "eff_rank": 3.98,
+  "gauss_stat": 1204.8,
+  "probe_r2": 0.4752,
+  "ridge_alpha": 0.01
+ },
+ {
+  "checkpoint": "exp2_pldm_s0/weights_epoch_3.pt",
+  "emb_mean_std": 0.07425563782453537,
+  "dead_dims": 0,
+  "eff_rank": 1.82,
+  "gauss_stat": 1205.62,
+  "probe_r2": 0.4101,
+  "ridge_alpha": 0.01
+ },
+ {
+  "checkpoint": "exp2_pldm_s1/weights_epoch_3.pt",
+  "emb_mean_std": 0.07604773342609406,
+  "dead_dims": 0,
+  "eff_rank": 2.08,
+  "gauss_stat": 1205.61,
+  "probe_r2": 0.4274,
+  "ridge_alpha": 0.01
+ },
+ {
+  "checkpoint": "exp2_pldm_s2/weights_epoch_3.pt",
+  "emb_mean_std": 0.30698636174201965,
+  "dead_dims": 0,
+  "eff_rank": 2.29,
+  "gauss_stat": 1189.59,
+  "probe_r2": 0.5003,
+  "ridge_alpha": 0.01
+ },
+ {
+  "checkpoint": "tworoom/lewm.pt",
+  "emb_mean_std": 0.031885940581560135,
+  "dead_dims": 0,
+  "eff_rank": 1.66,
+  "gauss_stat": 1204.16,
+  "probe_r2": 0.4928,
+  "ridge_alpha": 0.01
+ }
+]

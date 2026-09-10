@@ -12,27 +12,40 @@ usually discussed as rival philosophies. This repo is what happened when I
 built one from scratch, ran the other, and then spent the time trying to break
 the second one's central claim.
 
-The short version: **the checkpoint with the lowest prediction loss had a
-collapsed encoder.** Loss of 0.004, sixty times better than normal, and 69 of
-192 embedding dimensions with near-zero variance — exactly the failure mode the
-paper's regularizer exists to prevent. I measured that directly rather than
-inferring it from the loss curve.
+The short version comes in two layers.
 
-And a less flattering one: **I mistook noise for a finding.** Experiment 2 was
-supposed to compare architectures. It took a while to work out that methods in
-the JEPA family share the architecture and differ in the loss — I swapped the
-model class but kept LeWM's loss, so both arms were the same thing.
+**Surface**: the checkpoint with the lowest prediction loss had a collapsed
+encoder — loss 0.004, sixty times better than normal, with 69 of 192 embedding
+dimensions at near-zero variance. Exactly the failure mode the paper's
+regulariser exists to prevent, measured directly.
 
-Redone properly (actually swapping the anti-collapse mechanism, three seeds per
-arm) it produced this project's most useful and least fun number: **same config,
-seed alone, planning success ranges from 36% to 70% — a within-arm SD of ±17
-points.** Detecting a true 10-point difference at that variance needs roughly 45
-seeds per arm. I had one.
+**Underneath, and I did not see it coming**: I ran three controlled experiments,
+all using CEM planning success as the primary metric. A fourth experiment — no
+training, just measurements on the checkpoints that already existed — found that
+this metric is dominated by a variable **none of them controlled or even
+recorded**: the absolute scale of the embedding (r = +0.89, t = 5.85). And all
+three interventions (context length, loss terms, regularisation weight) **move
+that scale as a side effect.**
 
-![](04_analysis/figures/exp2_seed_variance.png)
+So each of the first three measured "what this intervention did to the scale",
+not the intervention.
 
-So **every success-rate comparison in this repo sits inside the noise.** What
-survives is the direct measurement of representation collapse.
+![](04_analysis/figures/exp4_scale_vs_success.png)
+
+Two things fell over along the way. I had written that collapse leaves the
+representation without usable information — a linear probe for physical
+quantities says the information is nearly intact (R² 0.467 against 0.497 for a
+healthy model); what collapses is the **signal-to-noise ratio**, not the
+content. And SIGReg, across a thousandfold sweep of its weight, **never moved
+the quantity it claims to optimise** (distance from Gaussian pinned at 1206);
+what it actually maintains is scale.
+
+What this project ends up being is not "I reproduced two papers". It is a
+complete self-falsification: three experiments, the discovery that they all
+measured one confound, a low-variance diagnosis, the real mediating variable —
+and, incidentally, that the mechanism the paper names is not the mechanism doing
+the work.
+
 
 ---
 
@@ -42,7 +55,7 @@ survives is the direct measurement of representation collapse.
 |---|---|
 | [`01_dreamer_from_scratch/`](01_dreamer_from_scratch) | DreamerV2 written from scratch, single file. RSSM, reward head, actor-critic, imagination rollout. vs. Double-DQN on CartPole, 3 seeds. |
 | [`02_lewm_reproduction/`](02_lewm_reproduction) | Getting [LeWorldModel](https://github.com/lucas-maes/le-wm) running and reproducing its released checkpoint. Most of the notes here are about the install, which is where the time actually went. |
-| [`03_experiments/`](03_experiments) | The part I care about. Three controlled experiments on LeWorldModel. |
+| [`03_experiments/`](03_experiments) | Four experiments. The first three measured the wrong thing; the fourth found out why — **start there**. |
 | [`04_analysis/`](04_analysis) | `summary.csv` — every checkpoint, every metric, one table — and the scripts that draw the figures. |
 | [`05_dreamerv3_scale/`](05_dreamerv3_scale) | The official DreamerV3 on DMC walker-walk, run overnight to the task ceiling. |
 | [`notes/engineering_log_en.md`](notes/engineering_log_en.md) | What broke, and how long each thing cost. |
@@ -99,11 +112,13 @@ written up in [`02_lewm_reproduction/setup_en.md`](02_lewm_reproduction/setup_en
 because that is the part a reproduction write-up usually omits and the part
 that actually stops people.
 
-## Part 3 — Three experiments
+## Part 3 — Four experiments
 
-Every arm below: same dataset, same encoder, same optimizer, same 900 gradient
-steps, same CEM planner, same 50 held-out episodes. One thing changes per
-experiment.
+The first three arms below: same dataset, same encoder, same optimizer, same 900
+gradient steps, same CEM planner, same 50 held-out episodes, one variable each.
+
+**Their conclusions were later overturned by the fourth**, which is kept here
+because the overturning is what this project actually contains.
 
 ### 1. How much context does the predictor need?
 
@@ -190,6 +205,39 @@ The published default sits at the top of the inverted U. That is a specific
 hyperparameter, independently checked against the failure mode it is named for,
 on that failure mode's own terms.
 
+### 4. What decides the success rate? (the diagnosis, and the only significant result)
+
+No training — low-variance measurements on the 12 checkpoints that already
+existed: representation scale, effective rank, distance from Gaussian, and a
+linear probe for physical quantities (the paper's own probing protocol).
+
+Correlation with planning success across the eleven 900-step checkpoints:
+
+| metric | r | significance |
+|---|---|---|
+| physics probe R² (is the information there) | +0.24 | not significant |
+| effective rank | −0.22 | not significant |
+| distance from Gaussian | −0.30 | not significant |
+| **embedding scale** | **+0.89** | **t=5.85, significant** |
+
+![](04_analysis/figures/exp4_confound.png)
+
+Left: the success changes in experiments 1 and 3 have **exactly the shape** of
+their scale changes. Right: a thousandfold sweep of the SIGReg weight leaves the
+quantity it optimises **completely unmoved** (1206/1206/1206), against 0.5 for a
+true Gaussian and 170 for a 4-D linear manifold — the learned representation is
+~2400x further from isotropic than a Gaussian and **uses about 4 of its 192
+dimensions**.
+
+One instructive exception: the fully-trained released checkpoint has a scale of
+0.032 — an order of magnitude below every healthy model I trained — and the
+lowest effective rank here (1.66), yet scores 86%. So "scale decides" holds only
+among **undertrained** models. With enough training the predictor's error drops
+and a compact representation is fine; a 900-step model can only outrun its own
+prediction noise by inflating the scale.
+
+Details in [`03_experiments/exp4_representation/`](03_experiments/exp4_representation).
+
 ### All six checkpoints
 
 ![](04_analysis/figures/loss_vs_success.png)
@@ -207,30 +255,31 @@ Full numbers in [`04_analysis/summary.csv`](04_analysis/summary.csv), tests in
 
 ## What this is and isn't
 
-It is: two world-model families reproduced, and three controlled experiments
-where exactly one variable moves, including one that verifies a published
-claim by measuring the mechanism rather than the metric.
+**It is**: two world-model families reproduced, plus one complete
+self-correction — three controlled experiments, the discovery that they share an
+uncontrolled confound, a low-variance diagnosis, the real mediating variable, and
+along the way the retraction of two of my own mechanistic explanations and one of
+the paper's.
 
-It isn't publication-grade, and the weakness is worse than I first thought.
+**It is not** publication-grade. The honest list:
 
-The seed variance measured in the experiment-2 redo is **±17 points** — same
-config, seed alone, a 34-point spread. At that variance, resolving a true
-10-point difference needs about 45 seeds per arm; experiments 1 and 3 have one
-each. **So every success-rate comparison in this repo sits inside the noise**,
-including the horizon sweep and the SIGReg success-rate gap.
-
-What survives is the measurement that does not route through success rate: under
-collapse, embedding SD is 0.0012 against 0.325 (270x) and 69 of 192 dimensions
-are dead. Those come from encoding real data, not from a 50-episode sample.
-
-There is also no head-to-head Dreamer vs LeWorldModel comparison (different
-objectives, different metrics), and experiment 2's first design was simply
-wrong — written up in its own README. The Dreamer half is better behaved — 3 seeds on CartPole, plus a full-scale
-walker-walk run that reaches the task ceiling. Nothing here compares Dreamer against LeWorldModel
-head-to-head, because they optimize different objectives (reward vs.
-distance-to-goal-embedding) and evaluate on different metrics (return vs.
-success rate); forcing them onto one axis would need a shared task definition I
-did not build.
+- The success-rate conclusions of the first three experiments are **all
+  withdrawn.** Their primary metric is dominated by embedding scale (r=0.89) and
+  all three interventions move it — more seeds cannot fix that, they only buy a
+  precise estimate of a confounded quantity.
+- Experiment 2's first version **varied the wrong thing** (JEPA-family methods
+  share the architecture and differ in the loss; I swapped only the class).
+- Experiment 3's collapse detection stands, but the **mechanism I gave for it was
+  wrong** — not missing information, a collapsed signal-to-noise ratio.
+- Experiment 4 is significant (t=5.85) but n=11, observational, not
+  interventional. Establishing that scale *causes* planning quality needs an
+  intervention — rescaling embeddings at evaluation time and watching the success
+  rate follow. That is the obvious next step and I did not run it.
+- Everything here is a 900-step undertrained model, against a released checkpoint
+  at 86% on the same protocol. Experiment 4 itself shows the scale relationship
+  **stops holding** once a model is trained to convergence.
+- No head-to-head Dreamer vs LeWorldModel comparison — they do not share an
+  objective or a metric.
 
 ## Reproducing
 

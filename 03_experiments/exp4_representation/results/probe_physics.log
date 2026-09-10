@@ -1,0 +1,28 @@
+# 3000 帧，探针目标：智能体位置 (2D)
+
+13:05:36 | INFO  | __init__.py | JAX version 0.6.2 available.
+13:05:37 | INFO  | atomic_chec~| [atomic_save] installed crash-safe checkpoint plugin (write to sibling .tmp + fsync + atomic rename)
+13:05:37 | INFO  | utils.py    | Created ViT-tiny from scratch with config: {'hidden_size': 192, 'num_hidden_layers': 12, 'num_attention_heads': 3, 'intermediate_size': 768, 'image_size': 224, 'patch_size': 14}
+{"checkpoint": "lewm_sigreg_low/weights_epoch_3.pt", "emb_mean_std": 0.001208051573485136, "dead_dims": 49, "eff_rank": 7.4, "gauss_stat": 1206.14, "probe_r2": 0.4674, "ridge_alpha": 0.1}
+13:05:40 | INFO  | utils.py    | Created ViT-tiny from scratch with config: {'hidden_size': 192, 'num_hidden_layers': 12, 'num_attention_heads': 3, 'intermediate_size': 768, 'image_size': 224, 'patch_size': 14}
+{"checkpoint": "lewm_dim192/weights_epoch_3.pt", "emb_mean_std": 0.31907832622528076, "dead_dims": 0, "eff_rank": 4.14, "gauss_stat": 1205.57, "probe_r2": 0.4968, "ridge_alpha": 0.01}
+13:05:42 | INFO  | utils.py    | Created ViT-tiny from scratch with config: {'hidden_size': 192, 'num_hidden_layers': 12, 'num_attention_heads': 3, 'intermediate_size': 768, 'image_size': 224, 'patch_size': 14}
+{"checkpoint": "lewm_sigreg_high/weights_epoch_3.pt", "emb_mean_std": 0.1160036101937294, "dead_dims": 0, "eff_rank": 5.71, "gauss_stat": 1206.06, "probe_r2": 0.5155, "ridge_alpha": 0.001}
+13:05:45 | INFO  | utils.py    | Created ViT-tiny from scratch with config: {'hidden_size': 192, 'num_hidden_layers': 12, 'num_attention_heads': 3, 'intermediate_size': 768, 'image_size': 224, 'patch_size': 14}
+{"checkpoint": "lewm_hist1/weights_epoch_3.pt", "emb_mean_std": 0.3482486307621002, "dead_dims": 0, "eff_rank": 3.81, "gauss_stat": 1205.52, "probe_r2": 0.5253, "ridge_alpha": 0.01}
+13:05:47 | INFO  | utils.py    | Created ViT-tiny from scratch with config: {'hidden_size': 192, 'num_hidden_layers': 12, 'num_attention_heads': 3, 'intermediate_size': 768, 'image_size': 224, 'patch_size': 14}
+{"checkpoint": "lewm_hist5/weights_epoch_3.pt", "emb_mean_std": 0.388614684343338, "dead_dims": 0, "eff_rank": 3.98, "gauss_stat": 1204.38, "probe_r2": 0.5063, "ridge_alpha": 0.01}
+13:05:50 | INFO  | utils.py    | Created ViT-tiny from scratch with config: {'hidden_size': 192, 'num_hidden_layers': 12, 'num_attention_heads': 3, 'intermediate_size': 768, 'image_size': 224, 'patch_size': 14}
+{"checkpoint": "exp2_lewm_s0/weights_epoch_3.pt", "emb_mean_std": 0.2589558959007263, "dead_dims": 0, "eff_rank": 5.12, "gauss_stat": 1205.64, "probe_r2": 0.584, "ridge_alpha": 0.001}
+13:05:52 | INFO  | utils.py    | Created ViT-tiny from scratch with config: {'hidden_size': 192, 'num_hidden_layers': 12, 'num_attention_heads': 3, 'intermediate_size': 768, 'image_size': 224, 'patch_size': 14}
+{"checkpoint": "exp2_lewm_s1/weights_epoch_3.pt", "emb_mean_std": 0.32396936416625977, "dead_dims": 0, "eff_rank": 3.54, "gauss_stat": 1204.71, "probe_r2": 0.5232, "ridge_alpha": 0.01}
+13:05:54 | INFO  | utils.py    | Created ViT-tiny from scratch with config: {'hidden_size': 192, 'num_hidden_layers': 12, 'num_attention_heads': 3, 'intermediate_size': 768, 'image_size': 224, 'patch_size': 14}
+{"checkpoint": "exp2_lewm_s2/weights_epoch_3.pt", "emb_mean_std": 0.40126052498817444, "dead_dims": 0, "eff_rank": 3.98, "gauss_stat": 1204.8, "probe_r2": 0.4752, "ridge_alpha": 0.01}
+13:05:57 | INFO  | utils.py    | Created ViT-tiny from scratch with config: {'hidden_size': 192, 'num_hidden_layers': 12, 'num_attention_heads': 3, 'intermediate_size': 768, 'image_size': 224, 'patch_size': 14}
+{"checkpoint": "exp2_pldm_s0/weights_epoch_3.pt", "emb_mean_std": 0.07425563782453537, "dead_dims": 0, "eff_rank": 1.82, "gauss_stat": 1205.62, "probe_r2": 0.4101, "ridge_alpha": 0.01}
+13:05:59 | INFO  | utils.py    | Created ViT-tiny from scratch with config: {'hidden_size': 192, 'num_hidden_layers': 12, 'num_attention_heads': 3, 'intermediate_size': 768, 'image_size': 224, 'patch_size': 14}
+{"checkpoint": "exp2_pldm_s1/weights_epoch_3.pt", "emb_mean_std": 0.07604773342609406, "dead_dims": 0, "eff_rank": 2.08, "gauss_stat": 1205.61, "probe_r2": 0.4274, "ridge_alpha": 0.01}
+13:06:02 | INFO  | utils.py    | Created ViT-tiny from scratch with config: {'hidden_size': 192, 'num_hidden_layers': 12, 'num_attention_heads': 3, 'intermediate_size': 768, 'image_size': 224, 'patch_size': 14}
+{"checkpoint": "exp2_pldm_s2/weights_epoch_3.pt", "emb_mean_std": 0.30698636174201965, "dead_dims": 0, "eff_rank": 2.29, "gauss_stat": 1189.59, "probe_r2": 0.5003, "ridge_alpha": 0.01}
+13:06:04 | INFO  | utils.py    | Created ViT-tiny from scratch with config: {'hidden_size': 192, 'num_hidden_layers': 12, 'num_attention_heads': 3, 'intermediate_size': 768, 'image_size': 224, 'patch_size': 14}
+{"checkpoint": "tworoom/lewm.pt", "emb_mean_std": 0.031885940581560135, "dead_dims": 0, "eff_rank": 1.66, "gauss_stat": 1204.16, "probe_r2": 0.4928, "ridge_alpha": 0.01}

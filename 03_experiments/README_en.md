@@ -17,11 +17,28 @@ undertrained models being compared to each other, not to the paper.
 |---|---|---|---|
 | [`exp1_horizon/`](exp1_horizon) | how much context does the predictor need? | `history_size` ∈ {1,3,5} | single seed, all inside ±17pp noise — no conclusion |
 | [`exp2_pldm/`](exp2_pldm) | does the anti-collapse mechanism matter? | SIGReg (1 term) vs VCReg+align+IDM (6) | 3 seeds, t=0.87, not significant; **measured seed variance ±17pp** |
-| [`exp3_sigreg/`](exp3_sigreg) | does the regularizer prevent collapse? | `loss.sigreg.weight` ∈ {0.001, 0.09, 1.0} | **yes** — 69/192 dead dims measured directly (the one conclusion that holds) |
+| [`exp3_sigreg/`](exp3_sigreg) | does the regularizer prevent collapse? | `loss.sigreg.weight` ∈ {0.001, 0.09, 1.0} | collapse is real (measured); the mechanism I gave for it was wrong — see exp 4 |
+| [`exp4_representation/`](exp4_representation) | **what decides the success rate?** | no training, measures existing checkpoints | **embedding scale, r=+0.89** — what all three were really measuring |
 
 Results roll up into [`../04_analysis/summary.csv`](../04_analysis/summary.csv).
 
-## On noise (read this before any number below)
+## ⚠️ Read experiment 4 first
+
+The primary metric of the first three experiments — CEM planning success — is
+dominated by a variable none of them controlled: **the absolute scale of the
+embedding** (r = +0.89, t = 5.85). And all three interventions — context
+length, loss terms, regularisation weight — **move that scale as a side
+effect.**
+
+So each of them measured "what this intervention did to the scale", not the
+intervention. More seeds does not fix that: forty-five seeds buys a precise
+estimate of a confounded quantity.
+
+[`exp4_representation/`](exp4_representation) is that diagnosis, and the only
+one here with a statistically significant result. **It should have been
+experiment one.**
+
+## On noise (kept for the record)
 
 The experiment-2 redo measured it directly: **same config, same data, same
 budget, seed alone, three runs.**

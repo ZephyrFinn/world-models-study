@@ -15,11 +15,24 @@
 |---|---|---|---|
 | [`exp1_horizon/`](exp1_horizon) | predictor 需要多少上下文？ | `history_size` ∈ {1,3,5} | 单 seed，全部落在 ±17pp 噪声内，无结论 |
 | [`exp2_pldm/`](exp2_pldm) | 防塌缩机制有影响吗？ | SIGReg(1项) vs VCReg+对齐+IDM(6项) | 3 seed，t=0.87 不显著；**量出种子方差 ±17pp** |
-| [`exp3_sigreg/`](exp3_sigreg) | 正则项真能防塌缩吗？ | `loss.sigreg.weight` ∈ {0.001, 0.09, 1.0} | **能**——直接测得 69/192 死维度（唯一撑得住的结论）|
+| [`exp3_sigreg/`](exp3_sigreg) | 正则项真能防塌缩吗？ | `loss.sigreg.weight` ∈ {0.001, 0.09, 1.0} | 塌缩确实发生（直接测得）；但机制解释是错的，见实验四 |
+| [`exp4_representation/`](exp4_representation) | **成功率到底被什么决定？** | 不训练，只测已有 checkpoint | **embedding 尺度，r=+0.89** —— 前三组测的都是它 |
 
 结果汇总到 [`../04_analysis/summary.csv`](../04_analysis/summary.csv)。
 
-## 关于噪声（读任何数字之前先看这段）
+## ⚠️ 先读实验四
+
+前三组实验用的主指标（CEM 规划成功率）**被一个我从没控制的变量支配**：
+embedding 的绝对尺度（r = +0.89，t = 5.85）。而这三个干预——改上下文长度、
+换 loss、调正则化权重——**都会顺带改变尺度**。
+
+所以前三组每次以为在测 A，实际测到的是"A 对尺度的副作用"。
+这不是"seed 不够"能修的：跑 45 个 seed 只会得到一个混杂量的精确估计。
+
+[`exp4_representation/`](exp4_representation) 是这个诊断，也是唯一给出
+统计显著结论的一组。**它应该是第一组实验。**
+
+## 关于噪声（历史记录）
 
 实验二重做时做了一次直接测量：**同一配置、同数据、同预算，只换随机种子，跑 3 次。**
 

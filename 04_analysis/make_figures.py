@@ -20,6 +20,7 @@ OUT.mkdir(exist_ok=True)
 
 BLUE, ORANGE, GREEN, YELLOW = "#2a78d6", "#eb6834", "#1baf7a", "#eda100"
 RED, GREY = "#c8402e", "#8a857a"
+INK_ = "#17150f"
 
 plt.rcParams.update({
     "figure.dpi": 140,
@@ -195,10 +196,157 @@ def fig_seed_variance(_d=None):
     plt.close(fig)
 
 
+# --------------------------------------------------------------------------
+# 实验四：表征测量
+# --------------------------------------------------------------------------
+import json as _json
+
+
+def _probe():
+    return {r["checkpoint"].split("/")[0]: r
+            for r in _json.load(open(HERE / "probe_physics.json"))}
+
+
+SUCC = {"lewm_sigreg_low": 34, "lewm_dim192": 52, "lewm_sigreg_high": 38,
+        "lewm_hist1": 54, "lewm_hist5": 64,
+        "exp2_lewm_s0": 36, "exp2_lewm_s1": 60, "exp2_lewm_s2": 70,
+        "exp2_pldm_s0": 32, "exp2_pldm_s1": 36, "exp2_pldm_s2": 62,
+        "tworoom": 86}
+
+
+def fig_scale_vs_success():
+    """主发现：决定规划成败的是 embedding 尺度，不是表征里有多少信息。"""
+    import statistics as st
+    p = _probe()
+    groups = {
+        "SIGReg sweep": (["lewm_sigreg_low", "lewm_dim192", "lewm_sigreg_high"], RED),
+        "horizon sweep": (["lewm_hist1", "lewm_hist5"], BLUE),
+        "LeWM (3 seeds)": (["exp2_lewm_s0", "exp2_lewm_s1", "exp2_lewm_s2"], GREEN),
+        "PLDM (3 seeds)": (["exp2_pldm_s0", "exp2_pldm_s1", "exp2_pldm_s2"], ORANGE),
+    }
+    fig, (a, b) = plt.subplots(1, 2, figsize=(8.0, 3.5))
+
+    xs, ys = [], []
+    for label, (keys, c) in groups.items():
+        gx = [p[k]["emb_mean_std"] for k in keys]
+        gy = [SUCC[k] for k in keys]
+        a.scatter(gx, gy, s=80, color=c, label=label, zorder=3,
+                  edgecolor="white", linewidth=1.2)
+        xs += gx; ys += gy
+
+    # 拟合线（只用 900 步的 11 个点）
+    n = len(xs); mx, my = st.mean(xs), st.mean(ys)
+    slope = sum((u - mx) * (v - my) for u, v in zip(xs, ys)) / sum((u - mx) ** 2 for u in xs)
+    r = (sum((u - mx) * (v - my) for u, v in zip(xs, ys))
+         / ((n - 1) * st.stdev(xs) * st.stdev(ys)))
+    lo, hi = min(xs) * 0.5, max(xs) * 1.08
+    a.plot([lo, hi], [my + slope * (lo - mx), my + slope * (hi - mx)],
+           color=GREY, lw=1.4, ls="--", zorder=2)
+    a.annotate(f"r = {r:+.2f}  (n={n} at 900 steps, t=5.9)", (0.03, 0.90),
+               xycoords="axes fraction", fontsize=9, color=GREY)
+
+    # 官方 checkpoint：例外，单独标
+    a.scatter([p["tworoom"]["emb_mean_std"]], [SUCC["tworoom"]], s=110,
+              facecolor="none", edgecolor=INK_, linewidth=1.8, zorder=4)
+    a.annotate("released ckpt\n(fully trained,\nbreaks the trend)",
+               (p["tworoom"]["emb_mean_std"], SUCC["tworoom"]),
+               textcoords="offset points", xytext=(-12, -30), fontsize=7.5,
+               color=INK_, ha="right")
+
+    a.set_xscale("log")
+    a.set_xlabel("embedding scale (mean per-dim SD, log)")
+    a.set_ylabel("CEM success (%)")
+    a.set_title("Scale predicts planning. Everything else doesn't.",
+                fontsize=9.5, loc="left")
+    a.legend(fontsize=7.5, loc="lower right", framealpha=0.95,
+             borderpad=0.4, handletextpad=0.4)
+    a.set_ylim(22, 97)
+    a.set_xlim(6e-4, 0.9)
+
+    # 右：其他候选指标全部不相关
+    cands = [("physics probe R²", "probe_r2", 0.244),
+             ("effective rank", "eff_rank", -0.220),
+             ("distance from Gaussian", "gauss_stat", -0.305),
+             ("embedding scale", "emb_mean_std", 0.890)]
+    names = [c[0] for c in cands]
+    vals = [c[2] for c in cands]
+    colors = [GREY] * 3 + [GREEN]
+    b.barh(names, vals, color=colors, height=0.55)
+    b.axvline(0, color=INK_, lw=0.8)
+    for i, v in enumerate(vals):
+        b.annotate(f"{v:+.2f}", (v, i), textcoords="offset points",
+                   xytext=(6 if v > 0 else -6, 0), va="center",
+                   ha="left" if v > 0 else "right", fontsize=8.5)
+    b.set_xlim(-0.6, 1.15)
+    b.set_xlabel("correlation with planning success (n=11)")
+    b.set_title("Only one of them is significant", fontsize=9.5, loc="left")
+    b.tick_params(axis="y", labelsize=8.5)
+
+    fig.tight_layout()
+    fig.savefig(OUT / "exp4_scale_vs_success.png", bbox_inches="tight")
+    plt.close(fig)
+
+
+def fig_confound():
+    """诊断：前三组实验以为在测 A，其实测到的是 A 对尺度的副作用。"""
+    p = _probe()
+    fig, (a, b) = plt.subplots(1, 2, figsize=(8.0, 3.3))
+
+    # 左：三组实验里，成功率如何跟着尺度走
+    panels = [
+        ("horizon", [("h=3", "lewm_dim192"), ("h=1", "lewm_hist1"), ("h=5", "lewm_hist5")], BLUE),
+        ("SIGReg λ", [("0.001", "lewm_sigreg_low"), ("1.0", "lewm_sigreg_high"),
+                      ("0.09", "lewm_dim192")], RED),
+    ]
+    for label, items, c in panels:
+        xs = [p[k]["emb_mean_std"] for _, k in items]
+        ys = [SUCC[k] for _, k in items]
+        order = sorted(range(len(xs)), key=lambda i: xs[i])
+        a.plot([xs[i] for i in order], [ys[i] for i in order], "o-",
+               color=c, lw=1.8, ms=7, label=label)
+        for (nm, k), x, y in zip(items, xs, ys):
+            dy = 10 if label == "horizon" else -14
+            a.annotate(nm, (x, y), textcoords="offset points", xytext=(0, dy),
+                       ha="center", fontsize=7.5, color=c)
+    a.set_xscale("log")
+    a.set_xlabel("embedding scale (log)"); a.set_ylabel("CEM success (%)")
+    a.set_title("Both sweeps just moved the scale", fontsize=9.5, loc="left")
+    a.legend(fontsize=8); a.set_ylim(25, 75)
+
+    # 右：SIGReg 声称要优化的量，在整个扫描里纹丝不动
+    lam = ["0.001", "0.09", "1.0"]
+    keys = ["lewm_sigreg_low", "lewm_dim192", "lewm_sigreg_high"]
+    gs = [p[k]["gauss_stat"] for k in keys]
+    b.bar(lam, gs, color=RED, width=0.5, zorder=3)
+    for i, v in enumerate(gs):
+        b.annotate(f"{v:.0f}", (i, v), textcoords="offset points",
+                   xytext=(0, 4), ha="center", fontsize=9)
+    b.axhline(170, color=GREY, ls="--", lw=1.2, zorder=2)
+    b.annotate("a 4-D linear manifold → 170", (0.985, 170), fontsize=8,
+               color=GREY, ha="right", va="bottom",
+               xycoords=("axes fraction", "data"),
+               bbox=dict(fc="white", ec="none", pad=1.2))
+    b.axhline(0.5, color=GREEN, ls="--", lw=1.2, zorder=2)
+    b.annotate("true isotropic Gaussian → 0.5", (0.985, 0.55), fontsize=8,
+               color=GREEN, ha="right", va="bottom",
+               xycoords=("axes fraction", "data"),
+               bbox=dict(fc="white", ec="none", pad=1.2))
+    b.set_yscale("symlog")
+    b.set_xlabel("SIGReg weight λ (1000x range)")
+    b.set_ylabel("distance from Gaussian (log)")
+    b.set_title("...and never moved what it optimises", fontsize=9.5, loc="left")
+    b.set_ylim(0.2, 6000)
+
+    fig.tight_layout()
+    fig.savefig(OUT / "exp4_confound.png", bbox_inches="tight")
+    plt.close(fig)
+
 if __name__ == "__main__":
     d = load()
     fig_horizon(d)
     fig_sigreg(d)
     fig_scatter(d)
     fig_seed_variance()
+    fig_scale_vs_success()
+    fig_confound()
     print(f"wrote {len(list(OUT.glob('*.png')))} figures to {OUT}")
