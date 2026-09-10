@@ -19,11 +19,20 @@ paper's regularizer exists to prevent. I measured that directly rather than
 inferring it from the loss curve.
 
 And a less flattering one: **I mistook noise for a finding.** Experiment 2 was
-supposed to compare architectures; it turned out the two "architectures" are
-byte-identical in this package, and the 14-point gap was random initialisation.
-The mistake is kept in the repo because it accidentally measured the noise floor
-of this setup (~15 points), and that ruler then constrains what every other
-experiment here is allowed to claim.
+supposed to compare architectures. It took a while to work out that methods in
+the JEPA family share the architecture and differ in the loss — I swapped the
+model class but kept LeWM's loss, so both arms were the same thing.
+
+Redone properly (actually swapping the anti-collapse mechanism, three seeds per
+arm) it produced this project's most useful and least fun number: **same config,
+seed alone, planning success ranges from 36% to 70% — a within-arm SD of ±17
+points.** Detecting a true 10-point difference at that variance needs roughly 45
+seeds per arm. I had one.
+
+![](04_analysis/figures/exp2_seed_variance.png)
+
+So **every success-rate comparison in this repo sits inside the noise.** What
+survives is the direct measurement of representation collapse.
 
 ---
 
@@ -109,29 +118,43 @@ is "h=5 is better; the rest is noise" — not a law. That mismatch between what
 the loss curve implied and what the eval actually did is what the next two
 experiments chase.
 
-### 2. Same budget, different architecture — this one failed, usefully
+### 2. Swapping the anti-collapse mechanism (wrong once, then redone)
 
-The plan was to hold the budget fixed and change only the architecture, by
-dropping PLDM into the same training loop and planner. It came out with PLDM
-predicting worse (0.298 vs 0.266) and planning better (66% vs 52%), which looks
-like a clean counterexample.
+The plan was "hold the budget, change only the architecture", implemented by
+editing `_target_` in the model config. **That design was wrong** — methods in
+the JEPA family share the architecture and differ in the loss:
 
-**It isn't.** Checking afterwards turned up three things:
+| | LeWM | PLDM |
+|---|---|---|
+| anti-collapse | SIGReg x1 | VCReg x4 + temporal alignment + inverse dynamics |
+| tunable weights | **1** | **6** |
 
-1. **They are the same architecture.** `pldm/module.py` and `lewm/module.py` in
-   `stable_worldmodel` are byte-identical; the two top-level files differ only
-   in `rollout()` inference details.
-2. **Different random init, unseeded.** `train.py` never passes `seed=` to
-   `spt.Manager`, so weight init is outside `cfg.seed`. The sanity-check loss
-   differs before training starts: 5.147 vs 5.001.
-3. **14 points is not significant.** z = 1.44, p = 0.15, 95% CI [-5, +33].
+Which is exactly the abstract's "reduces tunable loss hyperparameters **from six
+to one** compared to **the only existing end-to-end alternative**" — that
+alternative is PLDM. Swapping the class while keeping LeWM's loss hollowed PLDM
+out; both arms were LeWM.
 
-So it is an accidental run-to-run variance measurement: same everything but
-random init, 14 points apart.
+The redo also fixed a real bug: `train.py` never passes `seed=` to
+`spt.Manager`, so weight init was uncontrolled — which is where the first
+attempt's 14-point gap came from.
 
-That hands the repo a ruler it otherwise lacked: **no success-rate gap under
-~15 points is a result here.** Full tests in
-[`04_analysis/significance.py`](04_analysis/significance.py).
+Redone, three seeds per arm:
+
+| | success | mean | within-arm SD |
+|---|---|---|---|
+| LeWM | 36% / 60% / 70% | 55.3% | 17.5pp |
+| PLDM | 32% / 36% / 62% | 43.3% | 16.3pp |
+
+Welch t = 0.87, **nowhere near significant**. Direction favours LeWM; statistics
+cannot separate them.
+
+It also surfaced that **`pred_loss` is not comparable across models**: PLDM's is
+consistently 13–16x lower, but its embedding scale is far smaller — normalise by
+scale and they level out (2.84 vs 2.66). A milder version of the collapse trap:
+nothing has to collapse, a regulariser that merely squeezes the representation
+makes the MSE look better for free.
+
+Details in [`03_experiments/exp2_pldm/`](03_experiments/exp2_pldm).
 
 ### 3. Does the regularizer do what the paper says?
 
@@ -188,13 +211,21 @@ It is: two world-model families reproduced, and three controlled experiments
 where exactly one variable moves, including one that verifies a published
 claim by measuring the mechanism rather than the metric.
 
-It isn't publication-grade. Every LeWorldModel arm is a single seed at 900
-gradient steps with a 50-episode eval, against a released checkpoint that
-reaches 86% on the same protocol — so all of these models are undertrained.
-**One of six success-rate comparisons is statistically significant** (the
-released checkpoint against mine, p<0.001); every other interval crosses zero,
-and the empirical noise floor is ~15 points. Experiment 2 was worse than
-underpowered — it compared a model against itself without my noticing. The Dreamer half is better behaved — 3 seeds on CartPole, plus a full-scale
+It isn't publication-grade, and the weakness is worse than I first thought.
+
+The seed variance measured in the experiment-2 redo is **±17 points** — same
+config, seed alone, a 34-point spread. At that variance, resolving a true
+10-point difference needs about 45 seeds per arm; experiments 1 and 3 have one
+each. **So every success-rate comparison in this repo sits inside the noise**,
+including the horizon sweep and the SIGReg success-rate gap.
+
+What survives is the measurement that does not route through success rate: under
+collapse, embedding SD is 0.0012 against 0.325 (270x) and 69 of 192 dimensions
+are dead. Those come from encoding real data, not from a 50-episode sample.
+
+There is also no head-to-head Dreamer vs LeWorldModel comparison (different
+objectives, different metrics), and experiment 2's first design was simply
+wrong — written up in its own README. The Dreamer half is better behaved — 3 seeds on CartPole, plus a full-scale
 walker-walk run that reaches the task ceiling. Nothing here compares Dreamer against LeWorldModel
 head-to-head, because they optimize different objectives (reward vs.
 distance-to-goal-embedding) and evaluate on different metrics (return vs.

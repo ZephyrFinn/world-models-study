@@ -16,10 +16,16 @@ Prediction error falls with more context, which is what you would expect —
 more frames to disambiguate motion from. Planning success does not follow it:
 h=1 → h=3 improves loss and *loses* two points of success rate.
 
-At 50 episodes per arm, ±7pp standard error, that 54 vs 52 is nothing. The
-defensible claim is "h=5 helps"; the rest is noise. Worth another point at
-h=7-8 before believing the trend continues, and worth more seeds before
-believing any of it.
+⚠️ **The experiment-2 redo forces a further retraction here.**
+
+Measuring seed variance directly with three seeds gave **±17 points** — larger
+than the biggest gap in this table (12 points, h=5 against h=3). All three arms
+here are single-seed, so **h=5's 64% is inside the noise too and is not a
+result.**
+
+The honest statement: at current statistical power this experiment measured
+nothing. Making it meaningful needs roughly 45 seeds per arm — see
+[`../../04_analysis/significance.py`](../../04_analysis/significance.py).
 
 `rollout()` reads the window size back off `predictor.num_frames`, so each
 checkpoint plans with the window it trained on without an eval-side override.

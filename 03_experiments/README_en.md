@@ -15,21 +15,44 @@ undertrained models being compared to each other, not to the paper.
 
 | | question | variable | verdict |
 |---|---|---|---|
-| [`exp1_horizon/`](exp1_horizon) | how much context does the predictor need? | `history_size` ∈ {1,3,5} | h=5 best; h=1 vs h=3 is noise |
-| [`exp2_pldm/`](exp2_pldm) | does the architecture matter at fixed budget? | ~~JEPA vs PLDM~~ | **didn't work** — same architecture; measured the noise floor instead |
-| [`exp3_sigreg/`](exp3_sigreg) | does the regularizer prevent collapse? | `loss.sigreg.weight` ∈ {0.001, 0.09, 1.0} | yes — collapse reproduced at 0.001 |
+| [`exp1_horizon/`](exp1_horizon) | how much context does the predictor need? | `history_size` ∈ {1,3,5} | single seed, all inside ±17pp noise — no conclusion |
+| [`exp2_pldm/`](exp2_pldm) | does the anti-collapse mechanism matter? | SIGReg (1 term) vs VCReg+align+IDM (6) | 3 seeds, t=0.87, not significant; **measured seed variance ±17pp** |
+| [`exp3_sigreg/`](exp3_sigreg) | does the regularizer prevent collapse? | `loss.sigreg.weight` ∈ {0.001, 0.09, 1.0} | **yes** — 69/192 dead dims measured directly (the one conclusion that holds) |
 
 Results roll up into [`../04_analysis/summary.csv`](../04_analysis/summary.csv).
 
-## On noise
+## On noise (read this before any number below)
 
-50 episodes is a binomial sample. At p≈0.5 the standard error is ~7pp, so a
-95% interval on any single number here is roughly ±14pp. Differences that
-survive that: sigreg 0.001 (34%) vs. the 0.09 default (52%), and the released
-checkpoint (86%) vs. everything. Differences that do not: h=1 (54%) vs. h=3
-(52%), and PLDM (66%) vs. h=5 (64%).
+The experiment-2 redo measured it directly: **same config, same data, same
+budget, seed alone, three runs.**
 
-The SIGReg result is the one worth trusting, and not only because the gap is
-larger — it is the only one with an independent mechanistic measurement
-(embedding variance, dead dimension count) pointing the same direction as the
-success rate.
+| | success | within-arm SD |
+|---|---|---|
+| LeWM | 36% / 60% / 70% | 17.5pp |
+| PLDM | 32% / 36% / 62% | 16.3pp |
+
+![](../04_analysis/figures/exp2_seed_variance.png)
+
+**Seed variance is about ±17 points.** At that variance, resolving a true
+10-point difference at 80% power needs roughly **45 seeds per arm**. Experiments
+1 and 3 have **one** each.
+
+The consequence is blunt: **every success-rate comparison here sits inside the
+noise** — the 12 points between h=5 and h=3, the 18 points across the SIGReg
+switch. Run [`../04_analysis/significance.py`](../04_analysis/significance.py)
+for the full set.
+
+## What survives
+
+Only the measurements that do not route through success rate:
+
+**Collapse (SIGReg weight 0.001)**: mean embedding SD 0.0012 against 0.325, a
+270x difference, and 69/192 dead dimensions against 0/192.
+
+Those come from encoding real held-out data. They are not inferred from a loss
+curve and do not pass through a 50-episode sample. They are the only conclusion
+here that the current statistical power supports.
+
+The precise statement: **disabling the regulariser causes representation
+collapse (established); the collapse degrades planning (consistent, but not
+established at this power).**

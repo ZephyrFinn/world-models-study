@@ -1,0 +1,30 @@
+##### exp2_lewm_s0
+  "mean_std": 0.2594562768936157,
+  "dead_dims": 0,
+  "scale_sq": 0.06731756031513214,
+'success_rate': 36.0
+##### exp2_lewm_s1
+  "mean_std": 0.32893073558807373,
+  "dead_dims": 0,
+  "scale_sq": 0.10819543153047562,
+'success_rate': 60.0
+##### exp2_lewm_s2
+  "mean_std": 0.41058897972106934,
+  "dead_dims": 0,
+  "scale_sq": 0.16858330368995667,
+'success_rate': 70.0
+##### exp2_pldm_s0
+  "mean_std": 0.07145804911851883,
+  "dead_dims": 0,
+  "scale_sq": 0.005106252618134022,
+'success_rate': 32.0
+##### exp2_pldm_s1
+  "mean_std": 0.0734754279255867,
+  "dead_dims": 0,
+  "scale_sq": 0.005398638546466827,
+'success_rate': 36.0
+##### exp2_pldm_s2
+  "mean_std": 0.30636265873908997,
+  "dead_dims": 0,
+  "scale_sq": 0.09385807812213898,
+'success_rate': 62.0

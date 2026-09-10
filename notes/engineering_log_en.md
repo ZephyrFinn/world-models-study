@@ -94,31 +94,45 @@ flush — showed it had passed 80000. Checked `nvidia-smi` and process state
 first and concluded "healthy but slow"; the log file was simply stale. Trust
 the metrics file, not the redirected stdout.
 
-**Mistook noise for a finding.** Experiment 2 was meant to compare
-architectures: drop PLDM into LeWM's training loop at matched budget. PLDM came
-out predicting worse and planning better, which I wrote up as a direct
-counterexample to reading the loss column as a ranking — in the README and in a
-talk.
+**Mistook noise for a finding, and then found the problem ran deeper.**
+Experiment 2 was meant to compare architectures: drop PLDM into LeWM's training
+loop at matched budget. PLDM came out predicting worse and planning better,
+which I wrote up as a counterexample to reading the loss column as a ranking.
 
-Being asked why that disagreed with the paper's own claim sent me to `diff` the
-implementations. `pldm/module.py` and `lewm/module.py` in `stable_worldmodel`
-are **byte-identical**; the two top-level files differ only in `rollout()`
-inference details. It was never an architecture comparison.
+Being asked why that disagreed with the paper's own claim surfaced the first
+error: **methods in the JEPA family share the architecture and differ in the
+loss.** PLDM uses VCReg x4 + temporal alignment + inverse dynamics (six terms),
+LeWM uses SIGReg (one) — exactly the abstract's "from six to one compared to
+the only existing end-to-end alternative". Swapping only the model class while
+keeping LeWM's loss hollowed PLDM out. Both training logs report a
+`sigreg_loss` term, which settles it.
 
-`train.py` also never passes `seed=` to `spt.Manager`, so weight init sits
-outside `cfg.seed` — the library warns `User didn't specify seed`. The
-sanity-check loss differs before training starts: 5.147 against 5.001.
+A second bug alongside: `train.py` never passes `seed=` to `spt.Manager`, so
+weight init sits outside `cfg.seed` — the library warns about it. Sanity loss
+differs before training starts: 5.147 against 5.001.
 
-So the 14-point gap was run-to-run variance from random init. Two-proportion
-z-test: p = 0.15, interval crossing zero.
+The redo fixed both: `exp2_train.py` swaps the actual variable (the
+anti-collapse mechanism) and passes the seed through. Three seeds per arm.
 
-The experiment is kept because it accidentally produced the noise floor for
-this setup (~15 points), and that ruler says something uncomfortable: all three
-experiments were designed around expected effects of 10-20 points, so **a
-50-episode evaluation was never large enough to resolve any of them**. Two
-lessons: `diff` the implementations before claiming an architecture comparison,
-and fix the evaluation size before designing the experiments rather than
-running the statistics afterwards.
+**The redo's result is more uncomfortable than the original mistake.** Same
+config, seed alone: 36% / 60% / 70%, a within-arm SD of ±17 points. At that
+variance, resolving a true 10-point difference needs about 45 seeds per arm.
+Experiments 1 and 3 have one each — **the whole design is underpowered by
+roughly an order of magnitude**, and I only learned that after running all
+three.
+
+It also exposed a third thing: **`pred_loss` is not comparable across models.**
+PLDM's is consistently 13-16x lower, but its embedding scale is far smaller;
+normalise by scale squared and they level out (2.84 against 2.66). A milder
+version of the collapse trap — nothing has to collapse, a regulariser that
+merely squeezes the representation makes the MSE look better for free.
+`probe_collapse.py` now reports `scale_sq` so that division is at hand.
+
+Three lessons: `diff` the implementations before claiming an architecture
+comparison; establish what the axis of variation in a family of methods
+actually is; and **fix the evaluation size before designing experiments** —
+twenty minutes measuring seed variance up front would have shown that none of
+the three could resolve their expected effects.
 
 ---
 
