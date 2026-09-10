@@ -1,27 +1,24 @@
-# Experiment 1 — imagination horizon
+# 实验一 —— imagination horizon
 
-**English** · [中文](README_zh.md)
+[English](README_en.md) · **中文**
 
-`history_size` is the number of past embeddings the predictor conditions on
-before forecasting the next one. Swept over {1, 3, 5}; 3 is the published
-default.
+`history_size` 是 predictor 在预测下一个 embedding 之前，能看到几帧过去的 embedding。
+扫了 {1, 3, 5}，其中 3 是论文的默认值。
 
-| history_size | pred_loss | CEM success | dead dims |
+| history_size | pred_loss | CEM 成功率 | 死维度 |
 |---|---|---|---|
 | 1 | 0.345 | 54% | 0 / 192 |
-| 3 (default) | 0.266 | 52% | 0 / 192 |
+| 3（默认） | 0.266 | 52% | 0 / 192 |
 | 5 | **0.254** | **64%** | 0 / 192 |
 
-Prediction error falls with more context, which is what you would expect —
-more frames to disambiguate motion from. Planning success does not follow it:
-h=1 → h=3 improves loss and *loses* two points of success rate.
+预测误差随上下文增加而下降，符合预期——多几帧更容易把运动方向判断出来。
+规划成功率没有跟着走：h=1 → h=3 改善了 loss，却**丢掉了**两个点的成功率。
 
-At 50 episodes per arm, ±7pp standard error, that 54 vs 52 is nothing. The
-defensible claim is "h=5 helps"; the rest is noise. Worth another point at
-h=7-8 before believing the trend continues, and worth more seeds before
-believing any of it.
+每组 50 条 episode、标准误约 7 个百分点，54 和 52 的差距什么都说明不了。
+能站得住的说法是"h=5 有帮助"，其余是噪声。
+在相信这个趋势会延续之前，值得再补一个 h=7-8 的点；在相信其中任何一条之前，值得先补 seed。
 
-`rollout()` reads the window size back off `predictor.num_frames`, so each
-checkpoint plans with the window it trained on without an eval-side override.
+`rollout()` 会从 `predictor.num_frames` 反读窗口大小，
+所以每个 checkpoint 都用它训练时的窗口来规划，评估侧不需要额外覆盖参数。
 
-`./run.sh` reproduces both halves. Raw logs and eval dumps in `results/`.
+`./run.sh` 可复现训练和评估两半。原始日志和评估输出在 `results/`。

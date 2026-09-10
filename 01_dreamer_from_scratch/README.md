@@ -1,58 +1,48 @@
-# DreamerV2 from scratch
+# 从零手写 DreamerV2
 
-**English** · [中文](README_zh.md)
+[English](README_en.md) · **中文**
 
-`dreamer.py` is the whole thing in one file — no framework, so there is nowhere
-to hide a component I did not understand.
+`dreamer.py` 是完整实现，单文件，不依赖框架——所以没有任何地方可以藏一个我没搞懂的组件。
 
-- **Encoder** — MLP for vector observations (CNN path written for 64x64 pixels
-  but not used in these runs)
-- **RSSM** — GRU deterministic state + 32x16 categorical stochastic state with
-  straight-through gradients. `obs_step` (posterior, conditioned on a real
-  observation) and `img_step` (prior, action only) kept separate; `observe`
-  runs the posterior along a real sequence, `imagine` rolls the prior forward
-  without ever seeing an observation.
-- **Reward head** and **continue head** on the latent state
-- **Actor-critic** on λ-returns with a slow-moving target critic
-- **Imagination rollout** — the actor is trained entirely on prior rollouts
-  branched off posterior states from replay
+- **Encoder** —— 向量观测用 MLP（64×64 像素的 CNN 分支写了，但这些实验没用到）
+- **RSSM** —— GRU 确定性状态 + 32×16 categorical 随机状态，straight-through 梯度。
+  `obs_step`（后验，条件于真实观测）和 `img_step`（先验，只有动作）分开；
+  `observe` 沿真实序列跑后验，`imagine` 在完全看不到观测的情况下把先验向前滚动。
+- **Reward head** 和 **continue head**，都建在潜在状态上
+- **Actor-critic** —— 基于 λ-return，配一个缓慢更新的 target critic
+- **Imagination rollout** —— actor 完全在从回放的后验状态分叉出去的先验轨迹上训练
 
-`baseline_dqn.py` is a Double-DQN for comparison.
+`baseline_dqn.py` 是用来对照的 Double-DQN。
 
-## Results
+## 结果
 
-CartPole-v1, 20k env steps, 3 seeds each.
+CartPole-v1，2 万环境步，各 3 个 seed。
 
-| | mean eval return | converged (last 3 evals) |
+| | 全程平均评估回报 | 收敛段（最后 3 次评估） |
 |---|---|---|
 | DreamerV2 | 240.1 | 248.6 |
 | Double-DQN | 113.8 | 162.2 |
 
 ![](results/comparison_multiseed.png)
 
-Dreamer pulls ahead from ~3k steps and stays there with lower variance. DQN is
-spikier and shows the classic catastrophic-forgetting dip — one seed reaches
-500 mid-run and falls back to ~100.
+Dreamer 从约 3k 步开始拉开并保持，方差也更小。DQN 更抖，还出现了典型的灾难性遗忘——
+有个 seed 中途冲到 500，又跌回 100 左右。
 
-The sample-efficiency gap is the textbook result. The diagnostics are the part
-worth looking at:
+样本效率的差距是教科书结果。值得看的是诊断图：
 
 ![](results/diagnostics.png)
 
-- **KL** settles around 0.8 with free bits at 1.0 — binding, so the posterior
-  is not collapsing onto the prior, and not exploding either.
-- **Imagination λ-return** climbs 0 → 70+ over training, tracking real eval
-  return. This is the check that the model's imagined rollouts correspond to
-  something: the actor only ever sees imagined states, so if this number rose
-  while real return stayed flat, the world model would be hallucinating
-  comfortably and the policy would be optimising against a fantasy.
+- **KL** 在 free bits = 1.0 的约束下稳定在 0.8 附近——约束在起作用，
+  说明后验没有塌缩到先验上，也没有爆炸。
+- **想象中的 λ-return** 训练过程中从 0 涨到 70+，与真实评估回报同步。
+  这是在检查模型想象出来的轨迹是否对应现实：actor 只见过想象状态，
+  如果这条曲线涨而真实回报不动，就说明世界模型在舒服地做幻觉、策略在对着幻想做优化。
 
-## Running
+## 运行
 
 ```bash
-./run_experiments.sh     # 3 seeds x (Dreamer + DQN), ~20 min on one GPU
+./run_experiments.sh     # 3 seed ×（Dreamer + DQN），单卡约 20 分钟
 python plot_multiseed.py
 ```
 
-Raw per-run metrics in `results/runs/*/metrics.csv`; the trained weights
-(`agent.pt`) are not committed.
+每次运行的原始指标在 `results/runs/*/metrics.csv`；训练权重（`agent.pt`）没有入库。

@@ -1,34 +1,28 @@
-# Experiment 3 — does SIGReg actually prevent collapse?
+# 实验三 —— SIGReg 真的能防塌缩吗？
 
-**English** · [中文](README_zh.md)
+[English](README_en.md) · **中文**
 
-LeWorldModel's central claim is that a JEPA can be trained stably end-to-end
-from pixels with only two loss terms: next-embedding prediction, plus SIGReg
-regularising the embedding distribution toward an isotropic Gaussian. Weight
-defaults to 0.09.
+LeWorldModel 的核心主张是：一个 JEPA 可以只靠两项 loss 从像素端到端稳定训练——
+next-embedding 预测，加上把 embedding 分布正则化到各向同性高斯的 SIGReg。默认权重 0.09。
 
-Swept to 0.001 (effectively off) and 1.0 (10x), against the h=3 arm as the
-0.09 point.
+扫到 0.001（相当于关闭）和 1.0（10 倍），以实验一的 h=3 作为 0.09 那个点。
 
-| weight | pred_loss | mean emb. std | dead dims | CEM success |
+| 权重 | pred_loss | embedding 平均标准差 | 死维度 | CEM 成功率 |
 |---|---|---|---|---|
 | 0.001 | **0.004** | 0.0012 | **69 / 192** | **34%** |
-| 0.09 (default) | 0.266 | 0.325 | 0 / 192 | **52%** |
+| 0.09（默认） | 0.266 | 0.325 | 0 / 192 | **52%** |
 | 1.0 | 1.074 | 0.115 | 0 / 192 | 38% |
 
-## Why the loss column cannot answer this
+## 为什么 loss 这一列回答不了这个问题
 
-At weight 0.001 the prediction loss is 0.004 — sixty times better than the
-default, and the best number produced by any run in this repo. It is also
-completely meaningless. A collapsed encoder emits a near-constant vector, and
-predicting a constant is trivial, so the objective is minimised by destroying
-the representation. Read the loss alone and you would ship this checkpoint.
+权重 0.001 时预测 loss 是 0.004——比默认值好六十倍，是本仓库任何一次运行产出的最好数字。
+它也毫无意义。塌缩的 encoder 输出一个近乎常数的向量，而预测常数是平凡的，
+所以这个目标函数是靠**摧毁表征**来最小化的。只看 loss，你会把这个 checkpoint 发出去。
 
-## Measuring it instead
+## 于是改成直接测量
 
-`probe_collapse.py` loads a checkpoint, encodes 256 real held-out frames, and
-reports the per-dimension standard deviation of the resulting embeddings plus
-a count of dimensions with std < 1e-3.
+`probe_collapse.py` 加载一个 checkpoint，编码 256 帧真实的留出画面，
+报告每个维度的标准差，以及标准差 < 1e-3 的维度数。
 
 ```
 $ python probe_collapse.py lewm_sigreg_low/weights_epoch_3.pt
@@ -39,14 +33,10 @@ $ python probe_collapse.py lewm_sigreg_low/weights_epoch_3.pt
 }
 ```
 
-36% of the embedding is flat across real data. Planning success drops to 34%,
-the worst of any checkpoint here.
+36% 的 embedding 在真实数据上是平的。规划成功率掉到 34%，是这里所有 checkpoint 里最差的。
 
-At the other end, 10x the default does not collapse anything (0 dead dims) but
-compresses the spread to 0.115 — the embeddings are pushed so hard toward the
-target distribution that they stop separating states well enough to plan with.
-38%.
+另一头，10 倍默认权重不会塌缩任何东西（0 死维度），但把分布压缩到标准差 0.115——
+embedding 被过于用力地推向目标分布，以至于不再能把不同状态分开到足以用于规划。38%。
 
-The published default sits at the peak of the resulting inverted U. Which is
-the point: the paper names a failure mode and picks a constant to avoid it,
-and the constant holds up when you go and check for the failure mode directly.
+发布的默认值正好落在由此形成的倒 U 的顶点。这才是重点：
+论文点名了一个失败模式，并选了一个常数去避免它，而当你真的按那个失败模式本身的定义去查时，这个常数成立。

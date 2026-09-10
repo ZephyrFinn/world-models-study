@@ -1,26 +1,23 @@
-# Deck
+# 讲稿
 
-**English** · [中文](README_zh.md)
+[English](README_en.md) · **中文**
 
-Two builds off the same data and layout:
+同一套数据、同一套版式，两个构建：
 
 | | |
 |---|---|
-| `build_slides.py` | English, `slides_zh.html` |
-| `build_slides_zh.py` | Chinese, fixed 1280×720 so it prints one slide per page |
+| `build_slides.py` | 英文版，输出 `slides.html` |
+| `build_slides_zh.py` | 中文版，固定 1280×720，打印时每页正好一张幻灯片 |
 
 ```bash
 python build_slides.py                 # -> slides.html
 python build_slides_zh.py --pdf        # -> slides_zh.html + slides_zh.pdf
 ```
 
-Arrow keys or space to advance. The Chinese build passes `--print-to-pdf`
-through headless Chrome; `slides_zh.pdf` is committed since that is the
-artifact you actually hand to someone.
+方向键或空格翻页。中文版通过 headless Chrome 传 `--print-to-pdf` 导出；
+`slides_zh.pdf` 入库了，因为那才是真正会递给别人的东西，生成的 HTML 不入库。
 
-Every slide footer carries the repo path it corresponds to, so you can switch
-from the deck to the code mid-talk.
+每页页脚标着它对应的仓库路径，讲的时候可以直接从幻灯片切到代码。
 
-The DreamerV3 slide reads the training run's `metrics.jsonl` at build time
-instead of hardcoding a number, and checks whether its last eight eval points
-are flat before claiming the curve is still climbing.
+DreamerV3 那一页在构建时读训练任务的 `metrics.jsonl`，而不是把数字写死，
+并且会检查最后八个评估点是否已经走平，再决定要不要说"曲线仍在上升"。

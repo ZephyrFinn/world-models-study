@@ -1,30 +1,25 @@
-# Experiment 2 — LeWM vs PLDM at matched budget
+# 实验二 —— 同预算下的 LeWM vs PLDM
 
-**English** · [中文](README_zh.md)
+[English](README_en.md) · **中文**
 
-PLDM ships inside `stable_worldmodel` and is one of the baselines le-wm reports
-against. Its class takes the same constructor arguments as LeWM's JEPA and
-exposes the same `encode()` / `predict()`, so it drops into the same training
-loop and the same CEM planner — only the `_target_` paths in `pldm.yaml`
-differ from the LeWM model config.
+PLDM 随 `stable_worldmodel` 一起发布，是 le-wm 对比的 baseline 之一。
+它的类接受和 LeWM 的 JEPA 相同的构造参数，也暴露相同的 `encode()` / `predict()`，
+因此能塞进同一个训练循环和同一个 CEM 规划器——`pldm.yaml` 里只有 `_target_` 路径与 LeWM 的模型配置不同。
 
-Trained against the h=3 LeWM arm: same data, same 900 steps, same eval.
+对照 LeWM 的 h=3：同数据、同 900 步、同评估。
 
-| | pred_loss | CEM success | mean emb. std |
+| | pred_loss | CEM 成功率 | embedding 平均标准差 |
 |---|---|---|---|
 | LeWM h=3 | 0.266 | 52% | 0.325 |
 | PLDM | 0.298 | **66%** | 0.380 |
 
-PLDM has the worse prediction loss and the better planner. Both have healthy
-embeddings (no dead dimensions), so this is not a collapse artifact.
+PLDM 预测误差更差，规划器更强。两者 embedding 都健康（没有死维度），所以这不是塌缩造成的假象。
 
-Two caveats, both real:
+两个 caveat，都是真的：
 
-- One seed. 66 vs 52 is a 14pp gap against a ~7pp standard error — suggestive,
-  not established.
-- This is PLDM's **architecture** under **LeWM's recipe** (next-embedding loss
-  + SIGReg), not PLDM's own training objective. That is what isolates the
-  architecture, but it means the number is not a reproduction of the PLDM
-  paper and should not be cited as one.
+- **单 seed。** 66 对 52 是 14 个百分点，而标准误约 7——是"值得注意"，不是"已确立"。
+- **这是 PLDM 的架构配 LeWM 的训练配方**（next-embedding loss + SIGReg），
+  不是 PLDM 自己的训练目标。正是这一点隔离出了架构变量，
+  但也意味着这个数字**不是对 PLDM 论文的复现**，不应被这样引用。
 
-What it is good for: a counterexample to reading the loss column as a ranking.
+它的价值在于：它是一个反例，说明 loss 这一列不能拿来排序。
