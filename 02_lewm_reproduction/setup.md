@@ -1,5 +1,7 @@
 # Getting le-wm to run
 
+**English** · [中文](setup_zh.md)
+
 Notes from actually doing this on a fresh box, September 2026. The README in
 the upstream repo is accurate about intent but has drifted from the published
 `stable-worldmodel` package in a few places; most of the time here went into

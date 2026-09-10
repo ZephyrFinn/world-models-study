@@ -1,5 +1,7 @@
 # DreamerV3 at benchmark scale
 
+**English** · [中文](README_zh.md)
+
 Part 1 shows the components are understood by building them. This part runs
 the official implementation on a real benchmark to get a curve worth showing.
 

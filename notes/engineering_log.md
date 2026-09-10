@@ -1,5 +1,7 @@
 # Engineering log
 
+**English** · [中文](engineering_log_zh.md)
+
 Kept because reproduction write-ups usually skip this part, and it is the part
 that actually costs the days. Rough order, one night.
 

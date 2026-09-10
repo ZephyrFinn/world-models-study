@@ -1,5 +1,7 @@
 # world-models-study
 
+**English** · [中文](README_zh.md)
+
 Two families of world model, reproduced and then poked at.
 
 **Dreamer** learns a latent dynamics model by reconstructing what it sees, and

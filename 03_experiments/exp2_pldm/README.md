@@ -1,5 +1,7 @@
 # Experiment 2 — LeWM vs PLDM at matched budget
 
+**English** · [中文](README_zh.md)
+
 PLDM ships inside `stable_worldmodel` and is one of the baselines le-wm reports
 against. Its class takes the same constructor arguments as LeWM's JEPA and
 exposes the same `encode()` / `predict()`, so it drops into the same training

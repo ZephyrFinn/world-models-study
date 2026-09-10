@@ -1,5 +1,7 @@
 # Reproducing LeWorldModel
 
+**English** · [中文](README_zh.md)
+
 Upstream: [lucas-maes/le-wm](https://github.com/lucas-maes/le-wm) —
 *LeWorldModel: Stable End-to-End Joint-Embedding Predictive Architecture from
 Pixels* (Maes, Le Lidec, Scieur, LeCun, Balestriero; arXiv:2603.19312).

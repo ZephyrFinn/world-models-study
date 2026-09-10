@@ -1,5 +1,7 @@
 # Experiment 1 — imagination horizon
 
+**English** · [中文](README_zh.md)
+
 `history_size` is the number of past embeddings the predictor conditions on
 before forecasting the next one. Swept over {1, 3, 5}; 3 is the published
 default.

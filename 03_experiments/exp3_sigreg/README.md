@@ -1,5 +1,7 @@
 # Experiment 3 — does SIGReg actually prevent collapse?
 
+**English** · [中文](README_zh.md)
+
 LeWorldModel's central claim is that a JEPA can be trained stably end-to-end
 from pixels with only two loss terms: next-embedding prediction, plus SIGReg
 regularising the embedding distribution toward an isotropic Gaussian. Weight

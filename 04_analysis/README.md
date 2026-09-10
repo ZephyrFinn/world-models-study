@@ -1,5 +1,7 @@
 # Analysis
 
+**English** · [中文](README_zh.md)
+
 `summary.csv` — one row per checkpoint, every metric collected: training loss
 terms, CEM planning success, and the embedding-health diagnostics from
 `probe_collapse.py`.

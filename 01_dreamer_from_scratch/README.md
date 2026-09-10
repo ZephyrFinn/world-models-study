@@ -1,5 +1,7 @@
 # DreamerV2 from scratch
 
+**English** · [中文](README_zh.md)
+
 `dreamer.py` is the whole thing in one file — no framework, so there is nowhere
 to hide a component I did not understand.
 

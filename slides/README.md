@@ -1,5 +1,7 @@
 # Deck
 
+**English** · [中文](README_zh.md)
+
 Two builds off the same data and layout:
 
 | | |
