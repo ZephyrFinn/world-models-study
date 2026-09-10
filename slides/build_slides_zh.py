@@ -99,7 +99,7 @@ SLIDES = [
         <div class="card accent">
           <p class="n">3</p>
           <p class="card-h">然后去验证它</p>
-          <p>三组受控实验。这才是值得讲的部分。</p>
+          <p>四组受控实验。第四组推翻了前三组的结论——这才是值得讲的部分。</p>
         </div>
       </div>
     </section>""",
@@ -144,7 +144,7 @@ SLIDES = [
     """<section class="divider">
       <p class="eyebrow">以上是复现</p>
       <h1>以下是我自己做的</h1>
-      <p class="byline">同一份数据、同一个 encoder、同一个优化器、同样 900 步梯度更新、同样 50 条留出 episode。<br>每组实验只动一个变量。</p>
+      <p class="byline">同一份数据、同一个 encoder、同一个优化器、同样 900 步梯度更新、同样 50 条留出 episode。<br>每组实验只动一个变量——至少我当时是这么以为的。</p>
     </section>""",
 
     # 8 实验一
@@ -154,29 +154,22 @@ SLIDES = [
       <img src="{img(FIG/'exp1_horizon.png')}" alt="horizon 扫描">
       <p class="aside"><strong>loss 随上下文单调下降，成功率却没跟上。</strong>
       h=1 → h=3 这一步，loss 改善了，成功率反而掉了 2 个点。50 条 episode 的标准误约 7 个百分点，
-      所以这一对<strong>就是噪声</strong>，我能下的结论只有"h=5 更好"。
-      但正是这个错位，引出了后面两组实验。</p>
+      所以这一对<strong>就是噪声</strong>，当时我留下的结论只有"h=5 更好"。
+      记住这个成功率排序：<strong>52 / 54 / 64</strong> —— 第 14 页会回来推翻它。</p>
     </section>""",
 
     # 9 实验二
-    """<section>
-      <h2>实验二 —— 这一组我做错了</h2>
-      <p class="lead">原计划：固定预算只换架构，把 PLDM 塞进同一个训练循环和规划器。
-      跑出来 PLDM 预测更差却规划更好，看着像个漂亮的反例。</p>
-      <table>
-        <tr><th></th><th>pred_loss</th><th>规划成功率</th><th>死维度</th></tr>
-        <tr><td>LeWM h=3</td><td>0.266</td><td>52%</td><td>0 / 192</td></tr>
-        <tr><td>PLDM</td><td>0.298 <span class="worse">更差</span></td>
-            <td>66% <span class="better">更好</span></td><td>0 / 192</td></tr>
-      </table>
-      <p class="lead" style="margin-top:6px;"><strong>但它不成立。</strong>
-      事后 <code>diff</code> 发现：<code>pldm/module.py</code> 和 <code>lewm/module.py</code>
-      <strong>逐字节相同</strong>；<code>train.py</code> 没给 <code>Manager</code> 传 seed，
-      两次运行的初始权重不同（训练前 sanity loss 就是 5.147 vs 5.001）；
-      14 个点 z=1.44、p=0.15、CI 跨过 0。</p>
-      <p class="aside">所以它实际是一次意外的<strong>重跑方差测量</strong>——
-      同架构、同数据、同配方，仅初始化不同，成功率相差 14 个百分点。
-      这给了整个项目一把尺子：<strong>15 个百分点以内的差距都不能当结论。</strong></p>
+    f"""<section>
+      <h2>实验二 —— 变量选错了，重做一次</h2>
+      <p class="lead">原计划是"固定预算只换架构"。<strong>但这个设计本身就是错的：</strong>JEPA 是一个方法家族，
+      成员共享架构，区别在 anti-collapse loss。我只换了模型类、loss 仍然是 LeWM 的 SIGReg——<strong>两臂跑的是同一个方法</strong>
+      （两份训练日志都在报 <code>sigreg_loss</code>，真 PLDM 不该有这一项）。</p>
+      <p class="lead">重做：架构、数据、预算、规划器全部固定，<strong>只换防塌缩机制</strong>
+      （SIGReg×1 对 VCReg×4 + 时序对齐 + 逆动力学 = 6 项），补上 <code>Manager</code> 的 seed，每臂 3 个 seed。</p>
+      <img src="{img(FIG/'exp2_seed_variance.png')}" style="max-height:240px" alt="每臂三个 seed 的成功率分布">
+      <p class="aside"><strong>LeWM 55.3% 对 PLDM 43.3%，t = 0.87，CI [-27, +51]</strong>——方向和论文一致，但完全不显著。
+      真正的产出是那个标准差：只换 seed，成功率能从 36% 走到 70%，<strong>±17 个百分点</strong>。
+      要在 80% 功效下测出 10 个点的差异，每臂约需 45 个 seed。我有 1 个。</p>
     </section>""",
 
     # 10 实验三
@@ -187,7 +180,8 @@ SLIDES = [
       <img src="{img(FIG/'exp3_sigreg.png')}" alt="SIGReg 扫描与塌缩诊断">
       <p class="aside">权重降到 0.001 时：<strong>pred_loss = 0.004</strong>，是我整晚训出来的最低值，
       比正常模型好 60 倍——同时 <strong>192 维里有 69 维已经死掉</strong>。
-      encoder 塌缩会让预测任务变得极其简单，这个指标在这里是<strong>反向的</strong>。</p>
+      encoder 塌缩会让预测任务变得极其简单，这个指标在这里是<strong>反向的</strong>。
+      成功率 34% 只是印证——它为什么低，第 13 页给的答案和我当时想的不一样。</p>
     </section>""",
 
     # 11 机制
@@ -202,15 +196,45 @@ SLIDES = [
       <p class="lead">SIGReg 一直在报警——它的值是 50.75，是健康状态的十倍。但权重只有 0.001，
       它对总 loss 的贡献只有 0.001 × 50.75 ≈ 0.05，而模型靠塌缩省下了 0.26 的预测误差。<strong>它出价出不过。</strong></p>
       <p class="aside">另一头是过度正则：不塌缩，但 embedding 被压得太紧（标准差 0.325 → 0.115），
-      区分状态的能力变弱。论文选的 0.09 正好落在这个倒 U 的顶点。</p>
+      区分状态的能力变弱。论文选的 0.09 正好落在这个倒 U 的顶点。
+      记住成功率的这个形状：<strong>34 / 52 / 38</strong>。</p>
     </section>""",
 
     # 12 散点
     f"""<section>
       <h2>六个 checkpoint，没有趋势线</h2>
       <img src="{img(FIG/'loss_vs_success.png')}" alt="预测 loss vs 规划成功率">
-      <p class="aside">如果验证 loss 是可靠的代理指标，横跨三个数量级应该呈现一条向右下的趋势线。
-      它没有。loss 最低的那个点是塌缩模型；规划最好的那个甚至不是 LeWM。</p>
+      <p class="aside">如果验证 loss 是可靠的代理指标，横跨三个数量级应该呈现一条向右下的趋势线。<strong>它没有。</strong>
+      于是我手上只剩成功率这一个指标，而它的噪声是 ±17 个百分点。与其再多跑 seed 硬扛噪声，
+      不如换一个问题：<strong>到底是什么决定规划成不成功？</strong></p>
+    </section>""",
+
+    # 13 实验四 · 换指标
+    f"""<section>
+      <h2>实验四 —— 换一批噪声小得多的指标</h2>
+      <p class="lead">不训练任何新模型：在已有的 12 个 checkpoint 上、3000 帧留出数据上测四个量——
+      Epps-Pulley 正态性（<strong>SIGReg 声称要优化的东西</strong>）、岭回归探针 embedding → 智能体位置的留出 R²
+      （论文自己的 probing 口径）、有效秩、embedding 的绝对尺度。指标先在已知分布上校准过：
+      真高斯给 0.5，4 维线性流形嵌入 192 维给 170.6。</p>
+      <img src="{img(FIG/'exp4_scale_vs_success.png')}" style="max-height:290px" alt="embedding 尺度与规划成功率">
+      <p class="aside"><strong>表征里有多少物理信息，几乎不决定它能不能规划；表征有多大才决定。</strong>
+      尺度 r = +0.89（t = 5.85）；探针 R² +0.24、有效秩 −0.22、离高斯距离 −0.30，全部不显著。
+      CEM 靠比较 embedding 空间里的距离选动作——信号缩小而 predictor 误差不变，代价地形就被噪声淹没。
+      这也推翻了我在实验三给的解释：塌缩那个 checkpoint 探针 R² 是 0.467，健康的是 0.497，
+      <strong>塌缩毁掉的不是信息，是信噪比。</strong></p>
+    </section>""",
+
+    # 14 实验四 · 混杂
+    f"""<section>
+      <h2>于是：前三组实验测的是同一个变量</h2>
+      <img src="{img(FIG/'exp4_confound.png')}" alt="混杂变量与 SIGReg 的高斯性统计量">
+      <p class="lead">实验一的成功率排序（52 / 54 / 64）与它们的尺度排序（0.319 / 0.348 / 0.389）完全一致；
+      实验三成功率的倒 U（34 / 52 / 38）与尺度的倒 U（0.0012 / 0.319 / 0.116）同形。
+      三个不同的旋钮，落到同一个中介变量上。
+      <strong>加 seed 救不了这些实验——45 个 seed 只会得到一个混杂量的精确估计。问题不在功效，在设计。</strong></p>
+      <p class="aside">顺带的收获（右图）：整个 1000 倍权重扫描里，SIGReg 的高斯性统计量是
+      <strong>1206 / 1206 / 1206</strong>，纹丝不动，而真高斯是 0.5、4 维线性流形是 170。
+      它实际维持的是 embedding 尺度，不是高斯化——论文命名的机制和实际生效的机制不是一回事。</p>
     </section>""",
 
     # 13 v3
@@ -241,23 +265,27 @@ SLIDES = [
       <p class="aside">完整记录在仓库的 engineering log 里。写下来是因为——出问题的地方，恰恰是没人愿意写下来的地方。</p>
     </section>""",
 
-    # 15 局限
+    # 17 局限
     """<section>
       <h2>什么站得住，什么站不住</h2>
       <div class="two">
         <div class="pane accent">
-          <p class="pane-label">站得住</p>
-          <p>λ=0.001 的塌缩：18 个点的成功率差距，<em>并且</em>有一个独立的机制测量指向同一方向。</p>
-          <p>官方 checkpoint 的 86%，对比我 900 步训练的所有模型。</p>
+          <p class="pane-label">站得住（都是直接测量）</p>
+          <p>塌缩本身：embedding 标准差 0.0012 对 0.325，差 270 倍；死维度 69 对 0。没有噪声解释空间。</p>
+          <p>尺度与规划成功率的相关：r = 0.89，t = 5.85，n = 11。</p>
+          <p>SIGReg 的高斯性统计量在 1000 倍权重扫描下完全不动（1206 / 1206 / 1206）。</p>
         </div>
         <div class="pane">
           <p class="pane-label">站不住</p>
-          <p>单 seed、900 步、50 条评估。任何小于 10 个点的差距都是噪声——h=1 vs h=3、PLDM vs h=5 都在此列。</p>
-          <p>没有 Dreamer 与 LeWorldModel 的正面对比：目标函数和评估指标都不共享，硬凑一根轴需要我没搭的共同任务定义。</p>
+          <p>前三组的成功率结论<strong>全部作废</strong>——它们测的是同一个混杂变量（embedding 尺度）。</p>
+          <p>实验四是<strong>观测，不是干预</strong>。要证明尺度导致规划成败，得在评估时人为缩放 embedding
+          看成功率跟不跟着走。这是显然的下一步，我没做。</p>
+          <p>全部结论都在 900 步的欠训练模型上。官方 checkpoint 尺度只有 0.032 却拿 86%——这条规律在训练充分后就不成立。</p>
+          <p>没有 Dreamer 与 LeWorldModel 的正面对比：目标函数和评估指标都不共享。</p>
         </div>
       </div>
-      <p class="lead">下一步：先补到 3–5 个 seed 再谈其余结论；把 h 扫到 7–8 看收益在哪里饱和；
-      以及把死维度数做成训练期的实时监控——它便宜，而且能抓到 loss 曲线藏起来的塌缩。</p>
+      <p class="lead">下一步的优先级被改写了两次：先是从"扫更多超参数"改成"把评估规模做够"，
+      再从那里改成"先搞清楚主指标到底被什么决定"。<strong>回头看，第四组应该是第一组。</strong></p>
     </section>""",
 ]
 
@@ -272,6 +300,8 @@ FOOTERS = [
     "03_experiments/exp3_sigreg/",
     "03_experiments/exp3_sigreg/probe_collapse.py",
     "04_analysis/summary.csv",
+    "03_experiments/exp4_representation/",
+    "03_experiments/exp4_representation/",
     "05_dreamerv3_scale/",
     "notes/engineering_log.md",
     "README.md",

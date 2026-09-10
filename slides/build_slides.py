@@ -105,8 +105,8 @@ SLIDES = [
         <div class="card accent">
           <p class="n">3</p>
           <p class="card-h">Then tested it</p>
-          <p>Three controlled experiments. This is the part worth talking
-          about.</p>
+          <p>Four controlled experiments. The fourth one overturns the
+          first three &mdash; this is the part worth talking about.</p>
         </div>
       </div>
     </section>""",
@@ -160,7 +160,7 @@ SLIDES = [
       <p class="eyebrow">Everything above is reproduction</p>
       <h1>Everything below is mine</h1>
       <p class="byline">Same data, same encoder, same optimizer, same 900 gradient
-      steps, same 50 held-out episodes.<br>One variable per experiment.</p>
+      steps, same 50 held-out episodes.<br>One variable per experiment &mdash; or so I thought.</p>
     </section>""",
 
     # ---------------------------------------------------------------- 8
@@ -171,32 +171,30 @@ SLIDES = [
       <img src="{img(FIG/'exp1_horizon.png')}" alt="horizon sweep">
       <p class="aside"><strong>Loss falls with context. Success does not follow.</strong>
       h=1 &rarr; h=3 improves loss and <em>loses</em> two points of success rate. At 50
-      episodes the standard error is ~7pp, so that pair is noise &mdash; the only
-      defensible claim is that h=5 helps. But the mismatch is what I chased next.</p>
+      episodes the standard error is ~7pp, so that pair is noise &mdash; the claim
+      I left standing was that h=5 helps. Remember this success ordering &mdash;
+      <strong>52 / 54 / 64</strong> &mdash; slide 14 comes back for it.</p>
     </section>""",
 
     # ---------------------------------------------------------------- 9
-    """<section>
-      <h2>Experiment 2 &mdash; I got this one wrong</h2>
-      <p class="lead">The plan: hold the budget fixed, change only the
-      architecture, by dropping PLDM into the same training loop and planner. It
-      came out predicting worse and planning better &mdash; a clean counterexample,
-      apparently.</p>
-      <table>
-        <tr><th></th><th>pred_loss</th><th>CEM success</th><th>dead dims</th></tr>
-        <tr><td>LeWM h=3</td><td>0.266</td><td>52%</td><td>0 / 192</td></tr>
-        <tr><td>PLDM</td><td>0.298 <span class="worse">worse</span></td>
-            <td>66% <span class="better">better</span></td><td>0 / 192</td></tr>
-      </table>
-      <p class="lead" style="margin-top:6px;"><strong>It doesn't hold.</strong>
-      A later <code>diff</code>: <code>pldm/module.py</code> and
-      <code>lewm/module.py</code> are <strong>byte-identical</strong>;
-      <code>train.py</code> never seeds <code>Manager</code>, so the two runs
-      started from different weights (sanity loss 5.147 vs 5.001 before training);
-      and 14 points is z=1.44, p=0.15, interval crossing zero.</p>
-      <p class="aside">What it actually measured is run-to-run variance &mdash; same
-      architecture, same data, same recipe, different init, 14 points apart. That
-      hands the project a ruler: <strong>no gap under ~15 points is a result.</strong></p>
+    f"""<section>
+      <h2>Experiment 2 &mdash; wrong variable, run again</h2>
+      <p class="lead">The plan was "hold the budget, change only the architecture."
+      <strong>The design itself was wrong:</strong> JEPA is a family of methods that
+      share an architecture and differ in the anti-collapse loss. I swapped the model
+      class while the loss stayed LeWM's SIGReg &mdash; <strong>both arms were the same
+      method</strong> (both training logs report <code>sigreg_loss</code>; a real PLDM
+      run would not).</p>
+      <p class="lead">Redone: architecture, data, budget and planner fixed,
+      <strong>only the anti-collapse mechanism swapped</strong> (SIGReg &times;1 against
+      VCReg &times;4 + temporal alignment + inverse dynamics = 6 terms), the missing
+      <code>Manager</code> seed restored, three seeds per arm.</p>
+      <img src="{img(FIG/'exp2_seed_variance.png')}" alt="three seeds per arm" style="max-height:240px">
+      <p class="aside"><strong>LeWM 55.3% against PLDM 43.3%, t = 0.87, CI [-27, +51]</strong>
+      &mdash; the direction the paper claims, nowhere near significant. The real output is
+      that standard deviation: seed alone moves success from 36% to 70%,
+      <strong>&plusmn;17 points</strong>. Detecting a true 10-point difference at 80% power
+      needs about 45 seeds per arm. I had one.</p>
     </section>""",
 
     # ---------------------------------------------------------------- 10
@@ -227,7 +225,8 @@ SLIDES = [
       prediction error. It got outbid.</p>
       <p class="aside">The other end over-regularises: no collapse, but the
       embedding is squeezed too tight to stay discriminative. The published
-      default sits at the peak of the inverted U.</p>
+      default sits at the peak of the inverted U. Remember this shape too:
+      <strong>34 / 52 / 38</strong>.</p>
     </section>""",
 
     # ---------------------------------------------------------------- 12
@@ -235,9 +234,47 @@ SLIDES = [
       <h2>Six checkpoints, no trend line</h2>
       <img src="{img(FIG/'loss_vs_success.png')}" alt="prediction loss vs planning success, six checkpoints">
       <p class="aside">If validation loss were the right proxy this would trend
-      down-and-to-the-right across three orders of magnitude. It doesn't. The
-      lowest-loss checkpoint is the collapsed one; the best planner isn't even
-      a LeWM model.</p>
+      down-and-to-the-right across three orders of magnitude. <strong>It doesn't.</strong>
+      Which leaves me one metric, whose noise is &plusmn;17 points. Rather than buy more
+      seeds to brute-force that noise, change the question:
+      <strong>what decides whether planning works at all?</strong></p>
+    </section>""",
+
+    # ------------------- 13 experiment 4, the metrics
+    f"""<section>
+      <h2>Experiment 4 &mdash; metrics with far less noise</h2>
+      <p class="lead">No new training: on the 12 checkpoints that already exist, over
+      3000 held-out frames, measure four things &mdash; Epps-Pulley normality
+      (<strong>what SIGReg claims to optimise</strong>), held-out R&sup2; of a ridge probe
+      from embedding to agent position (the paper's own probing), effective rank, and
+      the embedding's absolute scale. Calibrated first on known distributions: a true
+      Gaussian gives 0.5, a 4-D manifold in 192-D gives 170.6.</p>
+      <img src="{img(FIG/'exp4_scale_vs_success.png')}" alt="embedding scale vs planning success" style="max-height:255px">
+      <p class="aside"><strong>How much physical information the representation carries
+      barely relates to whether it can plan. Its absolute scale is what decides.</strong>
+      Scale r = +0.89 (t = 5.85); probe R&sup2; +0.24, effective rank &minus;0.22, distance
+      from Gaussian &minus;0.30 &mdash; none significant. CEM picks actions by comparing
+      distances in embedding space; shrink the signal while the predictor's error stays
+      put and the cost landscape drowns in noise. This also overturns my own experiment 3
+      explanation: the collapsed checkpoint probes at R&sup2; = 0.467 against 0.497 for a
+      healthy one &mdash; <strong>collapse costs signal-to-noise, not information.</strong></p>
+    </section>""",
+
+    # ------------------- 14 experiment 4, the confound
+    f"""<section>
+      <h2>So: the first three measured one variable</h2>
+      <img src="{img(FIG/'exp4_confound.png')}" alt="the confound, and SIGReg's own statistic">
+      <p class="lead">Experiment 1's success ordering (52 / 54 / 64) matches its scale
+      ordering (0.319 / 0.348 / 0.389) exactly; experiment 3's inverted U in success
+      (34 / 52 / 38) is the same shape as its inverted U in scale
+      (0.0012 / 0.319 / 0.116). Three different knobs, one mediating variable.
+      <strong>More seeds would not have rescued them &mdash; 45 seeds buys a precise
+      estimate of a confounded quantity. The problem is the design, not the power.</strong></p>
+      <p class="aside">Incidental finding (right): across the whole 1000&times; weight
+      sweep SIGReg's Gaussianity statistic reads <strong>1206 / 1206 / 1206</strong> &mdash;
+      unmoved, against 0.5 for a true Gaussian and 170 for a 4-D linear manifold. What it
+      actually maintains is embedding scale, not Gaussianity. The mechanism the paper
+      names and the mechanism doing the work are not the same.</p>
     </section>""",
 
     # ---------------------------------------------------------------- 13
@@ -273,28 +310,35 @@ SLIDES = [
       break are the parts nobody writes down.</p>
     </section>""",
 
-    # ---------------------------------------------------------------- 15
+    # ------------------- 17 limits
     """<section>
       <h2>What this is, and what it isn't</h2>
       <div class="two">
         <div class="pane accent">
-          <p class="pane-label">Holds up</p>
-          <p>Collapse at &lambda;=0.001: an 18-point success gap <em>and</em> an
-          independent mechanistic measurement pointing the same way.</p>
-          <p>Released checkpoint at 86% vs. everything I trained at 900 steps.</p>
+          <p class="pane-label">Holds up (all direct measurements)</p>
+          <p>The collapse itself: embedding SD 0.0012 against 0.325, 270&times; apart;
+          69 dead dimensions against 0. No room for a noise explanation.</p>
+          <p>Scale against planning success: r = 0.89, t = 5.85, n = 11.</p>
+          <p>SIGReg's Gaussianity statistic unmoved across a 1000&times; weight sweep
+          (1206 / 1206 / 1206).</p>
         </div>
         <div class="pane">
           <p class="pane-label">Doesn't</p>
-          <p>Single seed, 900 steps, 50-episode evals. Anything under ~10
-          points is noise &mdash; h=1 vs h=3, PLDM vs h=5.</p>
-          <p>No head-to-head Dreamer vs LeWorldModel: different objectives,
-          different metrics. Forcing one axis would need a shared task I
-          didn't build.</p>
+          <p>The success-rate conclusions of the first three experiments are
+          <strong>all withdrawn</strong> &mdash; they measured one confound.</p>
+          <p>Experiment 4 is <strong>observational, not interventional</strong>. Proving
+          scale <em>causes</em> planning quality means rescaling embeddings at evaluation
+          time and watching success follow. That is the obvious next step; I did not run it.</p>
+          <p>Everything is a 900-step undertrained model. The released checkpoint has
+          scale 0.032 and still scores 86% &mdash; the relationship stops holding once a
+          model is trained to convergence.</p>
+          <p>No head-to-head Dreamer vs LeWorldModel: different objectives, different metrics.</p>
         </div>
       </div>
-      <p class="lead">Next: 3&ndash;5 seeds before trusting anything else; h=7&ndash;8 to see
-      where the horizon saturates; and dead-dimension count as a live training
-      monitor, since it is cheap and catches collapse the loss curve hides.</p>
+      <p class="lead">The next-step priority got rewritten twice: first from "sweep more
+      hyperparameters" to "make the evaluation big enough," then from there to "find out
+      what the primary metric is actually tracking."
+      <strong>Done again, experiment 4 would be experiment 1.</strong></p>
     </section>""",
 ]
 
@@ -309,6 +353,8 @@ FOOTERS = [
     "03_experiments/exp3_sigreg/",
     "03_experiments/exp3_sigreg/probe_collapse.py",
     "04_analysis/summary.csv",
+    "03_experiments/exp4_representation/",
+    "03_experiments/exp4_representation/",
     "04_analysis/dreamerv3_curve.py",
     "notes/engineering_log.md",
     "README.md",
@@ -387,9 +433,11 @@ ul.log strong{color:var(--ink)}
   font-size:1.35vh;color:var(--dim)}
 .divider .foot{color:#6f6a5e}
 
+@page{size:1280px 720px;margin:0}
 @media print{
   body{background:#fff}
-  section{height:100vh;page-break-after:always}
+  section{margin:0;box-shadow:none;page-break-after:always;break-after:page}
+  section:last-child{page-break-after:auto}
 }
 """
 
