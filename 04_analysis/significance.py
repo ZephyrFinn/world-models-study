@@ -3,15 +3,29 @@
 结论先写在前面：**分辨不了 10 到 20 个百分点级别的差异**，而我三组实验
 设计出来的预期效应量全都在这个区间。
 
+更糟的是，加 seed 也修不了它们 —— 见第四节：三组实验动的三个旋钮
+都改变了同一个中介变量（embedding 尺度，r=0.89），成功率测的是那个变量。
+跑 45 个 seed 只会得到一个混杂量的精确估计。
+
 依据来自实验二重做：同一配置、同数据、同预算，只换随机种子，跑 3 次。
 成功率的组内标准差约 17 个百分点——比我原本以为"值得讨论"的任何差距都大。
 
 用法：python significance.py
 """
+import csv
+import json
 import math
 import statistics as st
+from pathlib import Path
 
 N_EPISODES = 50
+HERE = Path(__file__).parent
+SUMMARY = HERE / "summary.csv"
+PROBE = HERE / "probe_physics.json"
+# summary.csv 里的 emb_mean_std 来自 probe_collapse.py（256 帧），
+# 实验四的四个指标全部来自 probe_physics.py（3000 帧留出数据）。
+# 相关性一律用后者，四个指标才在同一批样本上可比。
+PROBE_ALIAS = {"lewm_hist3": "lewm_dim192"}
 
 # 实验二重做：同配置 3 个 seed（seed 现在真的生效了，见 exp2_train.py）
 SEEDED = {
@@ -89,6 +103,62 @@ def main():
   这两个数字是拿真实数据编码后量出来的，不是从 loss 推断的，
   也不经过 50 条 episode 的采样噪声。它们是这个项目里唯一
   经得起当前统计强度检验的结论。""".rstrip())
+
+    correlations()
+
+
+def pearson(xs, ys):
+    n = len(xs)
+    mx, my = st.mean(xs), st.mean(ys)
+    sxy = sum((x - mx) * (y - my) for x, y in zip(xs, ys))
+    sxx = sum((x - mx) ** 2 for x in xs)
+    syy = sum((y - my) ** 2 for y in ys)
+    r = sxy / math.sqrt(sxx * syy)
+    t = r * math.sqrt((n - 2) / (1 - r * r)) if abs(r) < 1 else float("inf")
+    return r, t, n
+
+
+def correlations():
+    """实验四：成功率到底跟哪个表征指标相关？
+
+    只取 900 步的 checkpoint —— 官方 checkpoint 训练充分，
+    它恰恰是这条规律的反例（尺度 0.032 却拿 86%），混进来会掩盖问题。
+    """
+    probe = {r["checkpoint"].split("/")[0]: r
+             for r in json.loads(PROBE.read_text()) if "error" not in r}
+    rows = [r for r in csv.DictReader(open(SUMMARY)) if r["train_steps"] == "900"]
+    y = [float(r["cem_success_pct"]) for r in rows]
+
+    def col(name):
+        return [float(probe[PROBE_ALIAS.get(r["checkpoint"], r["checkpoint"])][name])
+                for r in rows]
+
+    print("\n" + "=" * 74)
+    print("四、那个成功率指标本身被什么决定？（实验四）")
+    print("=" * 74)
+    print(f"\n  n = {len(rows)} 个 900 步 checkpoint，t 检验自由度 {len(rows) - 2}\n")
+    print(f"  {'指标':<28}{'r':>8}{'t':>8}{'p':>9}   结论")
+    print("  " + "-" * 70)
+
+    metrics = [
+        ("物理探针 R²（信息够不够）", "probe_r2"),
+        ("有效秩", "eff_rank"),
+        ("离高斯距离", "gauss_stat"),
+        ("embedding 尺度", "emb_mean_std"),
+    ]
+    for label, name in metrics:
+        r, t, n = pearson(col(name), y)
+        p = 2 * (1 - 0.5 * (1 + math.erf(abs(t) / math.sqrt(2))))
+        verdict = "显著" if p < 0.05 else "不显著"
+        print(f"  {label:<28}{r:>+8.2f}{t:>8.2f}{p:>9.4f}   {verdict}")
+
+    print("""
+  只有尺度显著。也就是说：表征里有多少物理信息几乎不决定它能不能规划，
+  表征有多大才决定。而实验一、二、三动的三个旋钮全都会改变尺度 ——
+  它们测的是同一个混杂变量。
+
+  注意这是观测不是干预（n 很小，纯相关）。要确证因果，
+  得在评估时人为缩放 embedding 看成功率跟不跟着走。那一步我没做。""".rstrip())
 
 
 if __name__ == "__main__":

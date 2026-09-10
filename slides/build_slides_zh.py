@@ -218,7 +218,7 @@ SLIDES = [
       真高斯给 0.5，4 维线性流形嵌入 192 维给 170.6。</p>
       <img src="{img(FIG/'exp4_scale_vs_success.png')}" style="max-height:290px" alt="embedding 尺度与规划成功率">
       <p class="aside"><strong>表征里有多少物理信息，几乎不决定它能不能规划；表征有多大才决定。</strong>
-      尺度 r = +0.89（t = 5.85）；探针 R² +0.24、有效秩 −0.22、离高斯距离 −0.30，全部不显著。
+      尺度 r = +0.89（t = 5.85）；探针 R² +0.24、有效秩 −0.22、离高斯距离 −0.40，全部不显著。
       CEM 靠比较 embedding 空间里的距离选动作——信号缩小而 predictor 误差不变，代价地形就被噪声淹没。
       这也推翻了我在实验三给的解释：塌缩那个 checkpoint 探针 R² 是 0.467，健康的是 0.497，
       <strong>塌缩毁掉的不是信息，是信噪比。</strong></p>

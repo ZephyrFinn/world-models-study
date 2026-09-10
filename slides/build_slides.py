@@ -253,7 +253,7 @@ SLIDES = [
       <p class="aside"><strong>How much physical information the representation carries
       barely relates to whether it can plan. Its absolute scale is what decides.</strong>
       Scale r = +0.89 (t = 5.85); probe R&sup2; +0.24, effective rank &minus;0.22, distance
-      from Gaussian &minus;0.30 &mdash; none significant. CEM picks actions by comparing
+      from Gaussian &minus;0.40 &mdash; none significant. CEM picks actions by comparing
       distances in embedding space; shrink the signal while the predictor's error stays
       put and the cost landscape drowns in noise. This also overturns my own experiment 3
       explanation: the collapsed checkpoint probes at R&sup2; = 0.467 against 0.497 for a

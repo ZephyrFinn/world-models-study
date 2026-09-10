@@ -217,7 +217,7 @@ Correlation with planning success across the eleven 900-step checkpoints:
 |---|---|---|
 | physics probe R² (is the information there) | +0.24 | not significant |
 | effective rank | −0.22 | not significant |
-| distance from Gaussian | −0.30 | not significant |
+| distance from Gaussian | −0.40 | not significant |
 | **embedding scale** | **+0.89** | **t=5.85, significant** |
 
 ![](04_analysis/figures/exp4_confound.png)

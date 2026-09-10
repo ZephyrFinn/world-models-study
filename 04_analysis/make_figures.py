@@ -242,7 +242,8 @@ def fig_scale_vs_success():
     lo, hi = min(xs) * 0.5, max(xs) * 1.08
     a.plot([lo, hi], [my + slope * (lo - mx), my + slope * (hi - mx)],
            color=GREY, lw=1.4, ls="--", zorder=2)
-    a.annotate(f"r = {r:+.2f}  (n={n} at 900 steps, t=5.9)", (0.03, 0.90),
+    t = r * ((n - 2) / (1 - r * r)) ** 0.5
+    a.annotate(f"r = {r:+.2f}  (n={n} at 900 steps, t={t:.2f})", (0.03, 0.94),
                xycoords="axes fraction", fontsize=9, color=GREY)
 
     # 官方 checkpoint：例外，单独标
@@ -258,7 +259,8 @@ def fig_scale_vs_success():
     a.set_ylabel("CEM success (%)")
     a.set_title("Scale predicts planning. Everything else doesn't.",
                 fontsize=9.5, loc="left")
-    a.legend(fontsize=7.5, loc="lower right", framealpha=0.95,
+    # 图例放中左侧的空白区：右下角有 PLDM 那两个低尺度点，会被盖住
+    a.legend(fontsize=7.5, loc="center left", framealpha=0.95,
              borderpad=0.4, handletextpad=0.4)
     a.set_ylim(22, 97)
     a.set_xlim(6e-4, 0.9)
@@ -266,7 +268,7 @@ def fig_scale_vs_success():
     # 右：其他候选指标全部不相关
     cands = [("physics probe R²", "probe_r2", 0.244),
              ("effective rank", "eff_rank", -0.220),
-             ("distance from Gaussian", "gauss_stat", -0.305),
+             ("distance from Gaussian", "gauss_stat", -0.400),
              ("embedding scale", "emb_mean_std", 0.890)]
     names = [c[0] for c in cands]
     vals = [c[2] for c in cands]
@@ -274,9 +276,10 @@ def fig_scale_vs_success():
     b.barh(names, vals, color=colors, height=0.55)
     b.axvline(0, color=INK_, lw=0.8)
     for i, v in enumerate(vals):
+        # 正值标在条形右端外侧；负值标在条形内侧，否则会压住 y 轴刻度文字
         b.annotate(f"{v:+.2f}", (v, i), textcoords="offset points",
-                   xytext=(6 if v > 0 else -6, 0), va="center",
-                   ha="left" if v > 0 else "right", fontsize=8.5)
+                   xytext=(6, 0), va="center", ha="left", fontsize=8.5,
+                   color=INK_ if v > 0 else "white")
     b.set_xlim(-0.6, 1.15)
     b.set_xlabel("correlation with planning success (n=11)")
     b.set_title("Only one of them is significant", fontsize=9.5, loc="left")
