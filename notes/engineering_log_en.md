@@ -94,6 +94,32 @@ flush — showed it had passed 80000. Checked `nvidia-smi` and process state
 first and concluded "healthy but slow"; the log file was simply stale. Trust
 the metrics file, not the redirected stdout.
 
+**Mistook noise for a finding.** Experiment 2 was meant to compare
+architectures: drop PLDM into LeWM's training loop at matched budget. PLDM came
+out predicting worse and planning better, which I wrote up as a direct
+counterexample to reading the loss column as a ranking — in the README and in a
+talk.
+
+Being asked why that disagreed with the paper's own claim sent me to `diff` the
+implementations. `pldm/module.py` and `lewm/module.py` in `stable_worldmodel`
+are **byte-identical**; the two top-level files differ only in `rollout()`
+inference details. It was never an architecture comparison.
+
+`train.py` also never passes `seed=` to `spt.Manager`, so weight init sits
+outside `cfg.seed` — the library warns `User didn't specify seed`. The
+sanity-check loss differs before training starts: 5.147 against 5.001.
+
+So the 14-point gap was run-to-run variance from random init. Two-proportion
+z-test: p = 0.15, interval crossing zero.
+
+The experiment is kept because it accidentally produced the noise floor for
+this setup (~15 points), and that ruler says something uncomfortable: all three
+experiments were designed around expected effects of 10-20 points, so **a
+50-episode evaluation was never large enough to resolve any of them**. Two
+lessons: `diff` the implementations before claiming an architecture comparison,
+and fix the evaluation size before designing the experiments rather than
+running the statistics afterwards.
+
 ---
 
 Naming sediment worth knowing about if you read the raw logs: the `history_size=3`

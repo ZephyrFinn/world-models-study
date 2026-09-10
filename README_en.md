@@ -12,12 +12,18 @@ usually discussed as rival philosophies. This repo is what happened when I
 built one from scratch, ran the other, and then spent the time trying to break
 the second one's central claim.
 
-The short version of what came out of it: **validation loss turned out to be a
-bad predictor of whether either model could actually plan.** The
-lowest-prediction-loss checkpoint I trained all night was also one of the worst
-planners, because its encoder had quietly collapsed — which is exactly the
-failure mode the paper's regularizer exists to prevent, so I went and measured
-it directly rather than inferring it from the loss curve.
+The short version: **the checkpoint with the lowest prediction loss had a
+collapsed encoder.** Loss of 0.004, sixty times better than normal, and 69 of
+192 embedding dimensions with near-zero variance — exactly the failure mode the
+paper's regularizer exists to prevent. I measured that directly rather than
+inferring it from the loss curve.
+
+And a less flattering one: **I mistook noise for a finding.** Experiment 2 was
+supposed to compare architectures; it turned out the two "architectures" are
+byte-identical in this package, and the 14-point gap was random initialisation.
+The mistake is kept in the repo because it accidentally measured the noise floor
+of this setup (~15 points), and that ruler then constrains what every other
+experiment here is allowed to claim.
 
 ---
 
@@ -103,24 +109,29 @@ is "h=5 is better; the rest is noise" — not a law. That mismatch between what
 the loss curve implied and what the eval actually did is what the next two
 experiments chase.
 
-### 2. Same budget, different architecture
+### 2. Same budget, different architecture — this one failed, usefully
 
-PLDM — one of the baselines le-wm reports against — takes the same constructor
-arguments as LeWM's JEPA and exposes the same `encode`/`predict`, so it drops
-into the identical training loop and planner by swapping `_target_` paths in
-the model config. Nothing else changes.
+The plan was to hold the budget fixed and change only the architecture, by
+dropping PLDM into the same training loop and planner. It came out with PLDM
+predicting worse (0.298 vs 0.266) and planning better (66% vs 52%), which looks
+like a clean counterexample.
 
-| | pred_loss | CEM success |
-|---|---|---|
-| LeWM h=3 | 0.266 | 52% |
-| **PLDM** | **0.298** | **66%** |
+**It isn't.** Checking afterwards turned up three things:
 
-PLDM predicts *worse* and plans *better*. One seed, so treat it lightly — but
-it is a direct counterexample to reading the loss column as a ranking.
+1. **They are the same architecture.** `pldm/module.py` and `lewm/module.py` in
+   `stable_worldmodel` are byte-identical; the two top-level files differ only
+   in `rollout()` inference details.
+2. **Different random init, unseeded.** `train.py` never passes `seed=` to
+   `spt.Manager`, so weight init is outside `cfg.seed`. The sanity-check loss
+   differs before training starts: 5.147 vs 5.001.
+3. **14 points is not significant.** z = 1.44, p = 0.15, 95% CI [-5, +33].
 
-(Caveat worth stating: this trains PLDM's architecture under LeWM's recipe, not
-PLDM's own. That isolates the architecture, which is the point, but it is not a
-faithful reproduction of the PLDM paper.)
+So it is an accidental run-to-run variance measurement: same everything but
+random init, 14 points apart.
+
+That hands the repo a ruler it otherwise lacked: **no success-rate gap under
+~15 points is a result here.** Full tests in
+[`04_analysis/significance.py`](04_analysis/significance.py).
 
 ### 3. Does the regularizer do what the paper says?
 
@@ -137,10 +148,17 @@ resulting embedding, count how many dimensions are effectively dead.
 ![](04_analysis/figures/exp3_sigreg.png)
 
 At weight 0.001, **69 of 192 embedding dimensions have essentially zero
-variance** across real data. The model found the trivial solution. Its
-`pred_loss` is 0.004 — two orders of magnitude below anything else trained
-here, and completely meaningless. Planning success: 34%, the worst of the
-night.
+variance** across real data — mean std 0.0012 against 0.325 when healthy, a
+270x difference. The model found the trivial solution. Its `pred_loss` is
+0.004, two orders of magnitude below anything else trained here, and completely
+meaningless.
+
+Planning success drops to 34%, consistent in direction. To be precise about
+what that supports: **the collapse is measured, not inferred**, while the
+52% → 34% magnitude sits at p = 0.064 — the evaluation is too small to pin it.
+The honest statement is that disabling the regularizer causes collapse
+(established) and that the collapse degrades planning (consistent but
+underpowered).
 
 At 10× the default the embedding doesn't collapse, but gets squeezed too
 tightly around the target distribution to stay discriminative — 38%.
@@ -154,7 +172,13 @@ on that failure mode's own terms.
 ![](04_analysis/figures/loss_vs_success.png)
 
 If validation loss were the right proxy this would trend down-and-to-the-right.
-It doesn't. Full numbers in [`04_analysis/summary.csv`](04_analysis/summary.csv).
+It doesn't — though note that the four middle points are within noise of each
+other (see experiment 2). What carries the conclusion is the leftmost point:
+lowest loss, near-worst planning, and an anomaly corroborated by an independent
+measurement of the representation.
+
+Full numbers in [`04_analysis/summary.csv`](04_analysis/summary.csv), tests in
+[`04_analysis/significance.py`](04_analysis/significance.py).
 
 ---
 
@@ -166,8 +190,11 @@ claim by measuring the mechanism rather than the metric.
 
 It isn't publication-grade. Every LeWorldModel arm is a single seed at 900
 gradient steps with a 50-episode eval, against a released checkpoint that
-reaches 86% on the same protocol — so all of these models are undertrained, and
-differences under ~10pp are noise. The Dreamer half is better behaved — 3 seeds on CartPole, plus a full-scale
+reaches 86% on the same protocol — so all of these models are undertrained.
+**One of six success-rate comparisons is statistically significant** (the
+released checkpoint against mine, p<0.001); every other interval crosses zero,
+and the empirical noise floor is ~15 points. Experiment 2 was worse than
+underpowered — it compared a model against itself without my noticing. The Dreamer half is better behaved — 3 seeds on CartPole, plus a full-scale
 walker-walk run that reaches the task ceiling. Nothing here compares Dreamer against LeWorldModel
 head-to-head, because they optimize different objectives (reward vs.
 distance-to-goal-embedding) and evaluate on different metrics (return vs.

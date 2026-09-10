@@ -177,20 +177,26 @@ SLIDES = [
 
     # ---------------------------------------------------------------- 9
     """<section>
-      <h2>Experiment 2 &mdash; is the loss even ranking things?</h2>
-      <p class="lead">PLDM takes the same constructor arguments and exposes the
-      same interface, so it drops into the identical training loop and planner
-      by swapping two <code>_target_</code> paths. Same budget, same eval.</p>
+      <h2>Experiment 2 &mdash; I got this one wrong</h2>
+      <p class="lead">The plan: hold the budget fixed, change only the
+      architecture, by dropping PLDM into the same training loop and planner. It
+      came out predicting worse and planning better &mdash; a clean counterexample,
+      apparently.</p>
       <table>
         <tr><th></th><th>pred_loss</th><th>CEM success</th><th>dead dims</th></tr>
         <tr><td>LeWM h=3</td><td>0.266</td><td>52%</td><td>0 / 192</td></tr>
-        <tr class="hi"><td>PLDM</td><td>0.298 <span class="worse">worse</span></td>
+        <tr><td>PLDM</td><td>0.298 <span class="worse">worse</span></td>
             <td>66% <span class="better">better</span></td><td>0 / 192</td></tr>
       </table>
-      <p class="aside">Predicts worse, plans better. Both embeddings healthy, so
-      this is not a collapse artifact. One seed against a ~7pp standard error &mdash;
-      suggestive, not established. But it is a direct counterexample to reading
-      the loss column as a ranking.</p>
+      <p class="lead" style="margin-top:6px;"><strong>It doesn't hold.</strong>
+      A later <code>diff</code>: <code>pldm/module.py</code> and
+      <code>lewm/module.py</code> are <strong>byte-identical</strong>;
+      <code>train.py</code> never seeds <code>Manager</code>, so the two runs
+      started from different weights (sanity loss 5.147 vs 5.001 before training);
+      and 14 points is z=1.44, p=0.15, interval crossing zero.</p>
+      <p class="aside">What it actually measured is run-to-run variance &mdash; same
+      architecture, same data, same recipe, different init, 14 points apart. That
+      hands the project a ruler: <strong>no gap under ~15 points is a result.</strong></p>
     </section>""",
 
     # ---------------------------------------------------------------- 10

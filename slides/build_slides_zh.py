@@ -160,18 +160,23 @@ SLIDES = [
 
     # 9 实验二
     """<section>
-      <h2>实验二 —— loss 到底能不能给模型排序？</h2>
-      <p class="lead">PLDM 的构造函数签名和接口与 LeWM 完全一致，所以只改配置里两个 <code>_target_</code> 路径，
-      就能塞进同一个训练循环和同一个规划器。同预算、同评估。</p>
+      <h2>实验二 —— 这一组我做错了</h2>
+      <p class="lead">原计划：固定预算只换架构，把 PLDM 塞进同一个训练循环和规划器。
+      跑出来 PLDM 预测更差却规划更好，看着像个漂亮的反例。</p>
       <table>
         <tr><th></th><th>pred_loss</th><th>规划成功率</th><th>死维度</th></tr>
         <tr><td>LeWM h=3</td><td>0.266</td><td>52%</td><td>0 / 192</td></tr>
-        <tr class="hi"><td>PLDM</td><td>0.298 <span class="worse">更差</span></td>
+        <tr><td>PLDM</td><td>0.298 <span class="worse">更差</span></td>
             <td>66% <span class="better">更好</span></td><td>0 / 192</td></tr>
       </table>
-      <p class="aside">预测更差，规划更好。两者 embedding 都健康（没有死维度），所以这不是塌缩造成的假象。
-      单 seed、14 个点对 7pp 标准误——是"值得注意"，不是"已证实"。但它是一个直接的反例：
-      loss 这一列不能当排序用。</p>
+      <p class="lead" style="margin-top:6px;"><strong>但它不成立。</strong>
+      事后 <code>diff</code> 发现：<code>pldm/module.py</code> 和 <code>lewm/module.py</code>
+      <strong>逐字节相同</strong>；<code>train.py</code> 没给 <code>Manager</code> 传 seed，
+      两次运行的初始权重不同（训练前 sanity loss 就是 5.147 vs 5.001）；
+      14 个点 z=1.44、p=0.15、CI 跨过 0。</p>
+      <p class="aside">所以它实际是一次意外的<strong>重跑方差测量</strong>——
+      同架构、同数据、同配方，仅初始化不同，成功率相差 14 个百分点。
+      这给了整个项目一把尺子：<strong>15 个百分点以内的差距都不能当结论。</strong></p>
     </section>""",
 
     # 10 实验三

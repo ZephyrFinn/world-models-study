@@ -16,7 +16,7 @@ undertrained models being compared to each other, not to the paper.
 | | question | variable | verdict |
 |---|---|---|---|
 | [`exp1_horizon/`](exp1_horizon) | how much context does the predictor need? | `history_size` ∈ {1,3,5} | h=5 best; h=1 vs h=3 is noise |
-| [`exp2_pldm/`](exp2_pldm) | does the architecture matter at fixed budget? | JEPA vs PLDM | PLDM predicts worse, plans better |
+| [`exp2_pldm/`](exp2_pldm) | does the architecture matter at fixed budget? | ~~JEPA vs PLDM~~ | **didn't work** — same architecture; measured the noise floor instead |
 | [`exp3_sigreg/`](exp3_sigreg) | does the regularizer prevent collapse? | `loss.sigreg.weight` ∈ {0.001, 0.09, 1.0} | yes — collapse reproduced at 0.001 |
 
 Results roll up into [`../04_analysis/summary.csv`](../04_analysis/summary.csv).
