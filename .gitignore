@@ -15,6 +15,7 @@ wandb/
 
 # generated
 slides/slides.html
+slides/slides_zh.html
 
 # local working notes
 interview_prep/
