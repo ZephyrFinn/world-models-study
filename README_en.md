@@ -270,11 +270,19 @@ the paper's.
 - Experiment 2's first version **varied the wrong thing** (JEPA-family methods
   share the architecture and differ in the loss; I swapped only the class).
 - Experiment 3's collapse detection stands, but the **mechanism I gave for it was
-  wrong** — not missing information, a collapsed signal-to-noise ratio.
-- Experiment 4 is significant (t=5.85) but n=11, observational, not
-  interventional. Establishing that scale *causes* planning quality needs an
-  intervention — rescaling embeddings at evaluation time and watching the success
-  rate follow. That is the obvious next step and I did not run it.
+  wrong** — not missing information; what collapses is signal-to-noise.
+- **Scale is a marker, not a cause.** The correlation itself is solid
+  (leave-one-out keeps r in [+0.87, +0.95], every p < 0.0001), but the planner is
+  **exactly scale-invariant** — the cost is an MSE in embedding space and elites
+  are chosen by pure ranking, so a global rescale changes no decision at all.
+  Scale must therefore be standing in for something else, and this project does
+  not say what. The natural candidate (signal-to-noise, `pred_loss/scale²`) has
+  only marginal support: r = −0.59, p = 0.027, and one dropped point kills it.
+- Experiment 4 is observational, n=11. **And the "next step" I first wrote down
+  was invalid** — rescaling embeddings at evaluation returns a null by
+  construction. Valid replacements are in
+  [experiment 4's next steps](03_experiments/exp4_representation/README_en.md):
+  noise injection at evaluation, or pinning the scale during training.
 - Everything here is a 900-step undertrained model, against a released checkpoint
   at 86% on the same protocol. Experiment 4 itself shows the scale relationship
   **stops holding** once a model is trained to convergence.

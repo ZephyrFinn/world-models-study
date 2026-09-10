@@ -252,12 +252,12 @@ SLIDES = [
       <img src="{img(FIG/'exp4_scale_vs_success.png')}" alt="embedding scale vs planning success" style="max-height:255px">
       <p class="aside"><strong>How much physical information the representation carries
       barely relates to whether it can plan. Its absolute scale is what decides.</strong>
-      Scale r = +0.89 (t = 5.85); probe R&sup2; +0.24, effective rank &minus;0.22, distance
-      from Gaussian &minus;0.40 &mdash; none significant. CEM picks actions by comparing
-      distances in embedding space; shrink the signal while the predictor's error stays
-      put and the cost landscape drowns in noise. This also overturns my own experiment 3
-      explanation: the collapsed checkpoint probes at R&sup2; = 0.467 against 0.497 for a
-      healthy one &mdash; <strong>collapse costs signal-to-noise, not information.</strong></p>
+      Scale r = +0.89; probe R&sup2; +0.24, effective rank &minus;0.22, distance from
+      Gaussian &minus;0.40 &mdash; none significant. Leave-one-out: dropping any single
+      checkpoint leaves scale's r in [+0.87, +0.95], so <strong>it is not propped up by an
+      outlier</strong>. This also overturns my own experiment 3 explanation: the collapsed
+      checkpoint probes at R&sup2; = 0.467 against 0.497 for a healthy one &mdash;
+      <strong>what collapses is not the information.</strong></p>
     </section>""",
 
     # ------------------- 14 experiment 4, the confound
@@ -326,9 +326,12 @@ SLIDES = [
           <p class="pane-label">Doesn't</p>
           <p>The success-rate conclusions of the first three experiments are
           <strong>all withdrawn</strong> &mdash; they measured one confound.</p>
-          <p>Experiment 4 is <strong>observational, not interventional</strong>. Proving
-          scale <em>causes</em> planning quality means rescaling embeddings at evaluation
-          time and watching success follow. That is the obvious next step; I did not run it.</p>
+          <p><strong>Scale is a marker, not a cause.</strong> The planner is exactly
+          scale-invariant &mdash; MSE cost, elites by pure ranking &mdash; so scale must be
+          standing in for something this project does not identify.</p>
+          <p>The "next step" I first wrote down was <strong>itself invalid</strong>:
+          rescaling embeddings at evaluation returns a null by construction. Valid
+          replacements are noise injection at evaluation, or pinning scale during training.</p>
           <p>Everything is a 900-step undertrained model. The released checkpoint has
           scale 0.032 and still scores 86% &mdash; the relationship stops holding once a
           model is trained to convergence.</p>

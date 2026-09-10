@@ -71,15 +71,42 @@ Correlation with success across the 11 checkpoints trained for 900 steps:
 **How much physical information the representation carries barely relates to
 whether it can plan. Its absolute scale is what decides.**
 
-The mechanism: CEM picks actions by comparing distances in embedding space.
-Shrink the signal while the predictor's error stays put and the cost landscape
-drowns in noise — **planning fails from a collapsed signal-to-noise ratio, not
-from missing information.**
-
 This overturns the explanation I wrote in experiment 3. The collapsed
 checkpoint probes at R² = 0.467 against 0.497 for the healthy one — **the
 position information is nearly intact.** A linear probe is scale-invariant; the
 directional structure is still there.
+
+### But scale is a marker, not a cause
+
+Leave-one-out (section 5 of `../../04_analysis/significance.py`): dropping any
+single checkpoint leaves r in **[+0.87, +0.95]**, every p below 0.0001. **The
+correlation is not propped up by one outlier.**
+
+The mechanism is another matter. What I originally wrote was "shrink the signal
+while the predictor's error stays put and the cost landscape drowns in noise."
+That explanation has a hard problem:
+
+> **The planner is exactly scale-invariant.** The cost is an MSE in embedding
+> space ([`criterion` in `jepa.py`](../../../le-wm/jepa.py)) and elites are
+> chosen by `torch.topk(costs, largest=False)` — pure ranking. Multiply every
+> embedding by a constant c and every cost scales by c², the ranking is
+> unchanged, and the selected actions are identical.
+
+So scale **cannot** act through the cost geometry. It has to be standing in for
+something else.
+
+The natural candidate is signal-to-noise: `pred_loss / scale²`, the
+scale-normalised prediction error. The direction does check out —
+
+| candidate mediator | r | leave-one-out range | significance |
+|---|---|---|---|
+| embedding scale | **+0.89** | [+0.87, +0.95] | all p < 0.0001, **robust** |
+| log₁₀(pred_loss / scale²) | −0.59 | [−0.67, −0.53] | p = 0.027, **one dropped point kills it** |
+
+**The mechanism does not hold up.** It is a hint, not evidence.
+
+The defensible statement is only this: **scale is a robust marker and the
+mechanism is open.** I know it correlates strongly. I do not know why.
 
 ## Finding 2: the first three experiments moved one variable, unknowingly
 
@@ -139,10 +166,39 @@ representation, but predictions precise enough to match how fine-grained the
 representation already is. A 900-step model can only outrun its own prediction
 noise by inflating the scale.
 
+## Next steps (the one I first wrote down was invalid)
+
+My original next step was "rescale embeddings at evaluation time and watch the
+success rate follow." **That experiment is void** — by the argument above the
+planner is scale-invariant, so it returns a null by construction, and that null
+says nothing. Kept here on the record, because designing an experiment that
+cannot fail to return zero is itself worth writing down.
+
+Two valid replacements:
+
+**A · Noise injection (evaluation only, cheapest)**
+During planning, add Gaussian noise of controlled magnitude to the predicted
+embeddings and sweep the ratio σ/scale. That tests the signal-to-noise
+hypothesis directly: push a healthy checkpoint's σ/scale up to the collapsed
+checkpoint's level and see whether its success rate collapses too. No
+retraining — a few lines in `criterion`.
+
+**B · Pin the scale during training (needs retraining, cleanest design)**
+Put a fixed normalisation layer after the encoder (L2 to the unit sphere, or
+BatchNorm without affine) so scale stops being a free variable, then re-run
+experiments 1 and 3. If the success differences vanish, scale was the mediator;
+if they survive, scale was only a companion of the real cause.
+
+One honest caveat on B: adding a normalisation layer changes the training
+dynamics, so it tests "does the effect survive when scale cannot drift" rather
+than intervening on scale itself. A clean intervention on scale does not exist
+in this setup — which is the general predicament of observational work.
+
 ## Reproducing
 
 ```bash
 ./run.sh          # inference only, no retraining, ~15 minutes
+python ../../04_analysis/significance.py    # sections 4 and 5 recompute the correlations
 ```
 
 Raw output in `results/probe_physics.json`.

@@ -218,10 +218,10 @@ SLIDES = [
       真高斯给 0.5，4 维线性流形嵌入 192 维给 170.6。</p>
       <img src="{img(FIG/'exp4_scale_vs_success.png')}" style="max-height:290px" alt="embedding 尺度与规划成功率">
       <p class="aside"><strong>表征里有多少物理信息，几乎不决定它能不能规划；表征有多大才决定。</strong>
-      尺度 r = +0.89（t = 5.85）；探针 R² +0.24、有效秩 −0.22、离高斯距离 −0.40，全部不显著。
-      CEM 靠比较 embedding 空间里的距离选动作——信号缩小而 predictor 误差不变，代价地形就被噪声淹没。
+      尺度 r = +0.89；探针 R² +0.24、有效秩 −0.22、离高斯距离 −0.40，全部不显著。
+      留一法：删掉任意一个 checkpoint，尺度那条的 r 始终落在 [+0.87, +0.95]，<strong>不是离群点撑起来的</strong>。
       这也推翻了我在实验三给的解释：塌缩那个 checkpoint 探针 R² 是 0.467，健康的是 0.497，
-      <strong>塌缩毁掉的不是信息，是信噪比。</strong></p>
+      <strong>塌掉的不是信息。</strong></p>
     </section>""",
 
     # 14 实验四 · 混杂
@@ -278,8 +278,10 @@ SLIDES = [
         <div class="pane">
           <p class="pane-label">站不住</p>
           <p>前三组的成功率结论<strong>全部作废</strong>——它们测的是同一个混杂变量（embedding 尺度）。</p>
-          <p>实验四是<strong>观测，不是干预</strong>。要证明尺度导致规划成败，得在评估时人为缩放 embedding
-          看成功率跟不跟着走。这是显然的下一步，我没做。</p>
+          <p><strong>尺度是标记，不是原因。</strong>规划器对尺度严格不变（代价是 MSE、选精英是纯排序），
+          所以它必然在代理别的东西——而那是什么，这个项目没回答。</p>
+          <p>我最初写下的那个"下一步"<strong>本身是无效的</strong>：评估时缩放 embedding 按构造必然得零。
+          有效替代是评估期噪声注入，或训练期钉死尺度后重跑。</p>
           <p>全部结论都在 900 步的欠训练模型上。官方 checkpoint 尺度只有 0.032 却拿 86%——这条规律在训练充分后就不成立。</p>
           <p>没有 Dreamer 与 LeWorldModel 的正面对比：目标函数和评估指标都不共享。</p>
         </div>

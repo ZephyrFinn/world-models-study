@@ -105,6 +105,14 @@ def main():
   经得起当前统计强度检验的结论。""".rstrip())
 
     correlations()
+    robustness()
+
+
+def _rows_and_probe():
+    probe = {r["checkpoint"].split("/")[0]: r
+             for r in json.loads(PROBE.read_text()) if "error" not in r}
+    rows = [r for r in csv.DictReader(open(SUMMARY)) if r["train_steps"] == "900"]
+    return rows, probe
 
 
 def pearson(xs, ys):
@@ -124,9 +132,7 @@ def correlations():
     只取 900 步的 checkpoint —— 官方 checkpoint 训练充分，
     它恰恰是这条规律的反例（尺度 0.032 却拿 86%），混进来会掩盖问题。
     """
-    probe = {r["checkpoint"].split("/")[0]: r
-             for r in json.loads(PROBE.read_text()) if "error" not in r}
-    rows = [r for r in csv.DictReader(open(SUMMARY)) if r["train_steps"] == "900"]
+    rows, probe = _rows_and_probe()
     y = [float(r["cem_success_pct"]) for r in rows]
 
     def col(name):
@@ -159,6 +165,66 @@ def correlations():
 
   注意这是观测不是干预（n 很小，纯相关）。要确证因果，
   得在评估时人为缩放 embedding 看成功率跟不跟着走。那一步我没做。""".rstrip())
+
+
+def robustness():
+    """n=11 的相关性必须做留一法，否则一个离群点就能撑起一个"发现"。
+
+    同时检验机制假说：如果"信号被预测噪声淹没"成立，那么真正该起作用的
+    是信噪比 pred_loss / scale²，而不是尺度本身 —— 因为规划器对尺度不变
+    （代价是 embedding 空间的 MSE，选精英用 topk 排序，整体缩放不改变排序）。
+    """
+    rows, probe = _rows_and_probe()
+    name = [r["checkpoint"] for r in rows]
+    y = [float(r["cem_success_pct"]) for r in rows]
+    scale = [float(probe[PROBE_ALIAS.get(r["checkpoint"], r["checkpoint"])]["emb_mean_std"])
+             for r in rows]
+    snr = [math.log10(float(r["norm_pred_loss"])) for r in rows]
+
+    def pval(t, n):
+        return 2 * (1 - 0.5 * (1 + math.erf(abs(t) / math.sqrt(2))))
+
+    print("\n" + "=" * 74)
+    print("五、实验四的发现有多硬？（留一法 + 机制假说）")
+    print("=" * 74)
+
+    for label, xs, sign in [("embedding 尺度", scale, "+"),
+                            ("信噪比 log10(pred_loss/scale²)", snr, "−")]:
+        r0, t0, n0 = pearson(xs, y)
+        rs = []
+        weak = []
+        for i in range(len(xs)):
+            sub_x = [v for j, v in enumerate(xs) if j != i]
+            sub_y = [v for j, v in enumerate(y) if j != i]
+            r, t, n = pearson(sub_x, sub_y)
+            rs.append(r)
+            if pval(t, n) >= 0.05:
+                weak.append(name[i])
+        lo, hi = min(rs), max(rs)
+        print(f"\n  {label}")
+        print(f"    全部 11 点         r = {r0:+.3f}   p = {pval(t0, n0):.4f}")
+        print(f"    留一法 r 的范围     [{lo:+.3f}, {hi:+.3f}]")
+        if weak:
+            print(f"    删掉这些点后不再显著：{', '.join(weak)}   ← 脆弱")
+        else:
+            print(f"    任意删掉一个点都仍然显著   ← 稳健")
+
+    print("""
+  读法：
+
+    尺度那条稳得住 —— 留一法 r 始终在 0.87 以上，不是被某个离群点撑起来的。
+
+    机制那条撑不住 —— 信噪比方向对（负相关，误差相对信号越大、规划越差），
+    但删掉一个点就掉到不显著。它是提示，不是证据。
+
+  所以准确的说法是：**尺度是一个稳健的标记（marker），不是已证实的原因
+  （cause）**。而且规划器对尺度严格不变（代价函数是 MSE，选精英是纯排序），
+  所以尺度不可能通过代价几何直接起作用 —— 它一定是在代理别的什么东西，
+  而那个东西是什么，这个项目还没回答。
+
+  这也意味着"评估时把 embedding 乘个系数看成功率变不变"是个**无效实验**：
+  按构造必然得零。见 03_experiments/exp4_representation/README.md 里
+  修正后的两个下一步。""".rstrip())
 
 
 if __name__ == "__main__":

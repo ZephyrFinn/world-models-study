@@ -518,10 +518,10 @@ def build():
     tf = tb(s, M, Inches(5.55), CW, Inches(1.35))
     para(tf, "表征里有多少物理信息，几乎不决定它能不能规划；表征有多大才决定。",
          14, INK, bold=True, first=True, space_after=5)
-    para(tf, "尺度 r = +0.89（t = 5.85）；探针 R² +0.24、有效秩 −0.22、离高斯距离 −0.40，全部不显著。"
-             "CEM 靠比较 embedding 空间里的距离选动作——信号缩小而 predictor 误差不变，代价地形就被噪声淹没。"
+    para(tf, "尺度 r = +0.89；探针 R² +0.24、有效秩 −0.22、离高斯距离 −0.40，全部不显著。"
+             "留一法：删掉任意一个 checkpoint，尺度那条的 r 始终在 [+0.87, +0.95]，不是离群点撑起来的。"
              "这也推翻了我在实验三给的解释：塌缩那个 checkpoint 探针 R² 是 0.467，健康的是 0.497，"
-             "位置信息几乎完好。塌缩毁掉的不是信息，是信噪比。", 11.5, DIM)
+             "位置信息几乎完好——塌掉的不是信息。", 11.5, DIM)
     footer(s, "03_experiments/exp4_representation/", 13, T)
 
     # 14 实验四 · 混杂
@@ -585,16 +585,19 @@ def build():
           "SIGReg 的高斯性统计量在 1000 倍权重扫描下完全不动（1206 / 1206 / 1206）。"], True),
         ("站不住",
          ["前三组的成功率结论全部作废——它们测的是同一个混杂变量（embedding 尺度）。",
-          "实验四是观测，不是干预。要证明尺度导致规划成败，得在评估时人为缩放 embedding 看成功率跟不跟着走。这是显然的下一步，我没做。",
-          "全部结论都在 900 步的欠训练模型上。官方 checkpoint 尺度只有 0.032 却拿 86%——这条规律在训练充分后就不成立。",
+          "尺度是标记，不是原因：规划器对尺度严格不变（MSE 代价 + 纯排序选精英），"
+          "所以它必然在代理别的东西，而那是什么我没回答。",
+          "我最初写下的那个“下一步”本身也是无效的——评估时缩放 embedding 按构造必然得零。"
+          "有效替代：评估期噪声注入，或训练期钉死尺度后重跑。",
+          "全部结论都在 900 步欠训练模型上；官方 checkpoint 尺度 0.032 却拿 86%。",
           "没有 Dreamer 与 LeWorldModel 的正面对比：目标函数和评估指标都不共享。"], False)]):
         x = M + i * (cw2 + Inches(0.35))
-        card(s, x, Inches(1.55), cw2, Inches(3.5), accent=acc)
-        tf = tb(s, x + Inches(0.3), Inches(1.8), cw2 - Inches(0.6), Inches(3.0))
-        para(tf, label, 12, ACC if acc else DIM, bold=True, first=True, space_after=10)
+        card(s, x, Inches(1.45), cw2, Inches(4.05), accent=acc)
+        tf = tb(s, x + Inches(0.3), Inches(1.68), cw2 - Inches(0.6), Inches(3.6))
+        para(tf, label, 11.5, ACC if acc else DIM, bold=True, first=True, space_after=9)
         for it in items:
-            para(tf, it, 12, INK2, space_after=8)
-    tf = tb(s, M, Inches(5.45), CW, Inches(1.4))
+            para(tf, it, 11, INK2, space_after=7)
+    tf = tb(s, M, Inches(5.72), CW, Inches(1.2))
     para(tf, "下一步的优先级被改写了两次：先是从“扫更多超参数”改成“把评估规模做够”，"
              "再从那里改成“先搞清楚主指标到底被什么决定”。回头看，第四组应该是第一组。",
          13, INK2, first=True)
