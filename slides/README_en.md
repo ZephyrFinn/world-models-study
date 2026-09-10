@@ -28,3 +28,5 @@ instead of hardcoding a number, and checks whether its last eight eval points
 are flat before claiming the curve is still climbing.
 
 `build_pptx.py` rebuilds the layout with python-pptx rather than pasting screenshots: text is real text and tables are native tables, editable in PowerPoint, WPS or Keynote. Only the charts are PNGs, since they already are images.
+
+Every slide carries **speaker notes** (visible only on the presenter's screen) with timing, the point to land, and the follow-up questions that slide tends to draw.
